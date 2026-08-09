@@ -1,0 +1,250 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/* Theme tokens                                                        */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    --surface-bg: 11 14 20;
+    --surface-card: 17 22 32;
+    --surface-elevated: 22 28 40;
+    --surface-overlay: 28 35 49;
+    --surface-border: 36 44 59;
+
+    --fg: 232 237 245;
+    --fg-subtle: 167 178 196;
+    --fg-muted: 120 132 154;
+
+    --brand: 37 99 235;
+    --success: 34 197 94;
+    --warning: 245 158 11;
+    --danger: 239 68 68;
+
+    --radius: 0.5rem;
+    --topbar-h: 3.5rem;
+    --sidebar-w: 16rem;
+  }
+
+  * {
+    @apply border-surface-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-surface-bg text-surface-fg font-sans antialiased;
+    min-height: 100dvh;
+    /* Dense console text reads better slightly tighter than the default. */
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
+  }
+
+  /* The page itself must never scroll sideways — wide content scrolls
+     inside its own container instead (see .table-scroll below). */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-semibold tracking-tight text-surface-fg;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-surface-bg;
+  }
+
+  /* Numeric columns line up only with tabular figures. */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  /* Native date/time pickers ship a black glyph that vanishes on dark. */
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+    cursor: pointer;
+  }
+
+  ::selection {
+    @apply bg-brand-600/40 text-surface-fg;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Scrollbars                                                          */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--surface-border)) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--surface-border));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--fg-muted));
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Tables                                                              */
+/* ------------------------------------------------------------------ */
+
+@layer components {
+  /**
+   * Horizontal scroll container for every data table. Keeping the overflow on
+   * a wrapper (rather than the page) is what stops the whole console from
+   * sliding sideways when a table has 12 columns.
+   */
+  .table-scroll {
+    @apply relative w-full max-w-full overflow-x-auto overflow-y-hidden rounded-lg border border-surface-border bg-surface-card;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-scroll > table {
+    @apply w-full min-w-full border-collapse text-sm;
+  }
+
+  /* Sticky header survives vertical scroll inside a max-height container. */
+  .table-sticky-head thead th {
+    @apply sticky top-0 z-10 bg-surface-elevated;
+  }
+
+  /* Zebra striping, applied on the body only so the header stays flat. */
+  .table-zebra tbody tr:nth-child(even) {
+    background-color: rgb(var(--surface-elevated) / 0.35);
+  }
+
+  /* Freeze the first column on narrow viewports for identity-led tables. */
+  .table-pin-first th:first-child,
+  .table-pin-first td:first-child {
+    @apply sticky left-0 z-[5] bg-surface-card;
+  }
+
+  .table-pin-first thead th:first-child {
+    z-index: 11;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilities                                                           */
+/* ------------------------------------------------------------------ */
+
+@layer utilities {
+  .shimmer {
+    @apply bg-shimmer animate-shimmer;
+    background-size: 200% 100%;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Truncate to N lines. */
+  .line-clamp-2-safe {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Long ids, hashes and seeds. */
+  .mono-id {
+    @apply font-mono text-2xs tracking-tight text-surface-muted;
+    word-break: break-all;
+  }
+
+  .grid-dense-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Recharts overrides — the library ships light-mode defaults           */
+/* ------------------------------------------------------------------ */
+
+@layer components {
+  .recharts-cartesian-grid line {
+    stroke: rgb(var(--surface-border));
+  }
+
+  .recharts-text {
+    fill: rgb(var(--fg-muted));
+    font-size: 11px;
+  }
+
+  .recharts-default-tooltip {
+    background-color: rgb(var(--surface-overlay)) !important;
+    border: 1px solid rgb(var(--surface-border)) !important;
+    border-radius: 0.5rem !important;
+    color: rgb(var(--fg)) !important;
+    font-size: 12px !important;
+  }
+
+  .recharts-tooltip-cursor {
+    fill: rgb(var(--surface-elevated) / 0.5);
+  }
+
+  .recharts-surface:focus {
+    outline: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion                                                      */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,15 @@
+# Layered on top of the repo-root docker-compose.yml.
+# Adds only the container the editor runs in; postgres and redis come from the base file.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-20-bookworm
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    # Plain default network — the app reaches the databases by service name
+    # (`postgres`, `redis`), which is what setup.sh writes into .env.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

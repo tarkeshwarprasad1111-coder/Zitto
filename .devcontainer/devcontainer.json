@@ -1,0 +1,39 @@
+{
+  "name": "Zitto",
+
+  // Two compose files are layered: the repo's own postgres + redis services,
+  // then an `app` container for the editor to live in. Keeping the base file
+  // authoritative means local Docker and Codespaces run the same database.
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "forwardPorts": [3000, 3001, 4000, 4001, 5432, 6379],
+  "portsAttributes": {
+    "3000": { "label": "Player app", "onAutoForward": "openPreview" },
+    "3001": { "label": "Admin console" },
+    "4000": { "label": "API" },
+    "4001": { "label": "Realtime (WS)" },
+    "5432": { "label": "Postgres", "onAutoForward": "silent" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Prisma.prisma",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+
+  "remoteUser": "node"
+}

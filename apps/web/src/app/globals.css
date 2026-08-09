@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/* Theme tokens                                                        */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  :root {
+    --surface-bg: 10 10 15;
+    --surface-card: 19 19 26;
+    --surface-elevated: 28 28 38;
+    --surface-border: 42 42 56;
+
+    --fg: 245 245 250;
+    --fg-muted: 139 139 158;
+    --fg-subtle: 180 180 198;
+
+    --dragon: 220 38 38;
+    --tiger: 37 99 235;
+    --gold: 245 158 11;
+
+    --radius: 0.875rem;
+    --topbar-h: 3.5rem;
+    --nav-h: 4.25rem;
+  }
+
+  * {
+    @apply border-surface-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface-bg text-surface-fg font-sans antialiased;
+    /* Ambient dragon/tiger glow behind the whole app */
+    background-image:
+      radial-gradient(60rem 30rem at 12% -8%, rgba(220, 38, 38, 0.1), transparent 62%),
+      radial-gradient(55rem 28rem at 92% 4%, rgba(37, 99, 235, 0.1), transparent 60%);
+    background-attachment: fixed;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+
+  /* Never let the page scroll sideways on a 320px device */
+  body,
+  #__next {
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
+    text-wrap: balance;
+  }
+
+  /* Visible, high-contrast focus for keyboard users */
+  :focus-visible {
+    @apply outline-none ring-2 ring-gold-400 ring-offset-2 ring-offset-surface-bg;
+  }
+
+  /* Kill the number-input spinners — bet amounts are typed, not nudged */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  ::selection {
+    @apply bg-gold-500/30 text-surface-fg;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Scrollbars                                                          */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--surface-border)) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--surface-border));
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--fg-muted));
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilities                                                           */
+/* ------------------------------------------------------------------ */
+
+@layer utilities {
+  /* Glassmorphism — used sparingly, on hero + summary cards only */
+  .glass {
+    background-color: rgba(28, 28, 38, 0.6);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .glass-strong {
+    background-color: rgba(19, 19, 26, 0.82);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+  }
+
+  /* Gradient border via double-background trick — no pseudo-element needed */
+  .gradient-border {
+    border: 1px solid transparent;
+    background-image:
+      linear-gradient(rgb(var(--surface-card)), rgb(var(--surface-card))),
+      linear-gradient(135deg, rgba(220, 38, 38, 0.7), rgba(245, 158, 11, 0.55), rgba(37, 99, 235, 0.7));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  .gradient-border-gold {
+    border: 1px solid transparent;
+    background-image:
+      linear-gradient(rgb(var(--surface-card)), rgb(var(--surface-card))),
+      linear-gradient(135deg, #fbbf24, #f59e0b, #b45309);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  .text-gradient-gold {
+    @apply bg-gradient-gold bg-clip-text text-transparent;
+  }
+
+  .text-gradient-dragon-tiger {
+    background-image: linear-gradient(100deg, #f87171 0%, #fbbf24 50%, #60a5fa 100%);
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* Skeleton shimmer */
+  .shimmer {
+    background-image: var(--tw-gradient-shimmer, linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent));
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe areas */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Minimum 44x44 touch target, per WCAG 2.5.5 */
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  /* Screen-reader-only text that becomes visible on focus */
+  .sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion                                                      */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Forced colors / high contrast                                       */
+/* ------------------------------------------------------------------ */
+
+@media (forced-colors: active) {
+  .glass,
+  .glass-strong {
+    background: Canvas;
+    border: 1px solid CanvasText;
+  }
+}

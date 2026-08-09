@@ -1,0 +1,963 @@
+<title>Zitto — UI Preview</title>
+
+<style>
+  /* ============================================================
+     Showcase chrome tokens — theme aware.
+     The product screens below are NOT theme aware: Zitto commits
+     to a dark visual world, so rendering it light would misrepresent
+     the build. Only the frame around the screens adapts.
+     ============================================================ */
+  :root {
+    --pg-bg: #F4F4F7;
+    --pg-panel: #FFFFFF;
+    --pg-fg: #1A1A24;
+    --pg-muted: #6B6B80;
+    --pg-rule: #DEDEE6;
+    --pg-accent: #B45309;
+    --pg-shadow: 0 1px 2px rgba(26,26,36,.06), 0 12px 32px rgba(26,26,36,.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --pg-bg: #0D0D12;
+      --pg-panel: #15151C;
+      --pg-fg: #EDEDF2;
+      --pg-muted: #8B8B9E;
+      --pg-rule: #262630;
+      --pg-accent: #FBBF24;
+      --pg-shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"] {
+    --pg-bg: #F4F4F7; --pg-panel: #FFFFFF; --pg-fg: #1A1A24;
+    --pg-muted: #6B6B80; --pg-rule: #DEDEE6; --pg-accent: #B45309;
+    --pg-shadow: 0 1px 2px rgba(26,26,36,.06), 0 12px 32px rgba(26,26,36,.10);
+  }
+  :root[data-theme="dark"] {
+    --pg-bg: #0D0D12; --pg-panel: #15151C; --pg-fg: #EDEDF2;
+    --pg-muted: #8B8B9E; --pg-rule: #262630; --pg-accent: #FBBF24;
+    --pg-shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+  }
+
+  /* Product tokens — fixed, straight from apps/web/tailwind.config.ts */
+  :root {
+    --zt-bg:      #0A0A0F;
+    --zt-card:    #13131A;
+    --zt-elev:    #1C1C26;
+    --zt-overlay: #22222E;
+    --zt-border:  #2A2A38;
+    --zt-muted:   #8B8B9E;
+    --zt-subtle:  #B4B4C6;
+    --zt-fg:      #F5F5FA;
+    --zt-dragon:  #DC2626;
+    --zt-dragon2: #F87171;
+    --zt-tiger:   #2563EB;
+    --zt-tiger2:  #60A5FA;
+    --zt-gold:    #F59E0B;
+    --zt-gold2:   #FBBF24;
+    --zt-green:   #10B981;
+
+    --font-frame: Georgia, "Times New Roman", serif;
+    --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--pg-bg);
+    color: var(--pg-fg);
+    font-family: var(--font-frame);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  /* ---------- Showcase header ---------- */
+  .masthead { display: flex; flex-direction: column; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--pg-rule); }
+  .eyebrow {
+    font-family: var(--font-ui);
+    font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--pg-accent);
+  }
+  h1 { margin: 0; font-size: clamp(34px, 6vw, 52px); font-weight: 700; letter-spacing: -.02em; text-wrap: balance; line-height: 1.1; }
+  .lede { margin: 0; max-width: 60ch; font-size: 17px; color: var(--pg-muted); }
+
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 6px;
+    font-family: var(--font-ui); font-size: 12.5px; color: var(--pg-muted);
+  }
+  .meta-row b { color: var(--pg-fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Sections ---------- */
+  section { margin-top: 64px; }
+  .sec-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  h2 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+  .sec-note { margin: 0; max-width: 62ch; font-size: 15px; color: var(--pg-muted); }
+
+  /* ---------- Screen grid ---------- */
+  .screens {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px 28px;
+    align-items: start;
+    margin-top: 32px;
+  }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  figcaption { font-family: var(--font-ui); font-size: 13px; color: var(--pg-muted); }
+  figcaption b { display: block; font-size: 14px; font-weight: 650; color: var(--pg-fg); margin-bottom: 2px; }
+
+  /* ---------- Phone frame ---------- */
+  .phone {
+    width: 100%; max-width: 340px;
+    border: 8px solid #1F1F29;
+    border-radius: 34px;
+    background: var(--zt-bg);
+    box-shadow: var(--pg-shadow);
+    overflow: hidden;
+    font-family: var(--font-ui);
+    color: var(--zt-fg);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 18px 5px; font-size: 11px; color: var(--zt-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+  .screen { padding: 6px 14px 0; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ---------- Product primitives ---------- */
+  .card {
+    background: var(--zt-card); border: 1px solid var(--zt-border);
+    border-radius: 14px; padding: 13px;
+  }
+  .card.tight { padding: 11px 13px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .stack { display: flex; flex-direction: column; gap: 4px; }
+  .muted { color: var(--zt-muted); }
+  .subtle { color: var(--zt-subtle); }
+  .xs { font-size: 11px; }
+  .sm { font-size: 12px; }
+  .lg { font-size: 17px; font-weight: 700; }
+  .xl { font-size: 27px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .gold { color: var(--zt-gold2); }
+  .dragon { color: var(--zt-dragon2); }
+  .tiger { color: var(--zt-tiger2); }
+  .green { color: var(--zt-green); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .btn-primary { background: var(--zt-gold); color: #2A1A02; }
+  .btn-dragon { background: var(--zt-dragon); color: #fff; }
+  .btn-outline { background: transparent; border-color: var(--zt-border); color: var(--zt-subtle); }
+  .btn-ghost { background: var(--zt-elev); color: var(--zt-subtle); }
+  .btn-block { width: 100%; }
+  .btn[aria-disabled="true"] { opacity: .45; }
+
+  .chip {
+    border: 1px solid var(--zt-border); background: var(--zt-elev);
+    border-radius: 999px; padding: 5px 11px; font-size: 11.5px; color: var(--zt-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.on { background: var(--zt-gold); border-color: var(--zt-gold); color: #2A1A02; font-weight: 650; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .badge {
+    display: inline-block; border-radius: 999px; padding: 2.5px 9px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: .02em;
+  }
+  .b-amber { background: rgba(245,158,11,.16); color: var(--zt-gold2); border: 1px solid rgba(245,158,11,.3); }
+  .b-grey  { background: rgba(139,139,158,.16); color: var(--zt-muted); border: 1px solid rgba(139,139,158,.28); }
+  .b-green { background: rgba(16,185,129,.15); color: var(--zt-green); border: 1px solid rgba(16,185,129,.3); }
+  .b-red   { background: rgba(220,38,38,.16); color: var(--zt-dragon2); border: 1px solid rgba(220,38,38,.32); }
+  .b-blue  { background: rgba(37,99,235,.18); color: var(--zt-tiger2); border: 1px solid rgba(37,99,235,.34); }
+
+  .rule { height: 1px; background: var(--zt-border); border: 0; margin: 2px 0; }
+
+  /* The meta footer that every analytics card must carry */
+  .meta-foot {
+    border-top: 1px solid var(--zt-border); margin-top: 11px; padding-top: 9px;
+    font-size: 10.5px; color: var(--zt-muted); display: flex; flex-direction: column; gap: 4px;
+  }
+  .meta-foot .facts { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  .meta-foot .disc { font-style: italic; opacity: .85; line-height: 1.4; }
+
+  /* Bars */
+  .bar-track { height: 6px; background: var(--zt-elev); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 999px; }
+
+  .dist { display: flex; height: 30px; border-radius: 8px; overflow: hidden; }
+  .dist span { display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 650; color: #fff; }
+
+  /* Playing cards */
+  .pcards { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
+  .pcard {
+    aspect-ratio: 5/7; border-radius: 10px; background: #F7F7FB;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 8px; font-weight: 700; font-size: 17px;
+  }
+  .pcard.back {
+    background: repeating-linear-gradient(45deg, #1C1C26 0 6px, #22222E 6px 12px);
+    border: 1px solid var(--zt-border);
+  }
+  .pcard .btm { align-self: flex-end; transform: rotate(180deg); }
+
+  /* Result history dots */
+  .hist { display: flex; gap: 5px; }
+  .dot {
+    width: 21px; height: 21px; border-radius: 999px; display: flex;
+    align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff;
+  }
+
+  /* Bottom nav */
+  .bnav {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    border-top: 1px solid var(--zt-border); background: var(--zt-card);
+    margin-top: 14px; padding: 8px 0 11px;
+  }
+  .bnav div { text-align: center; font-size: 9.5px; color: var(--zt-muted); display: flex; flex-direction: column; gap: 3px; align-items: center; }
+  .bnav div.on { color: var(--zt-gold2); }
+  .glyph { width: 17px; height: 17px; display: block; }
+
+  /* ---------- Admin (desktop) frame ---------- */
+  .desk {
+    border: 1px solid var(--pg-rule); border-radius: 12px; overflow: hidden;
+    box-shadow: var(--pg-shadow); background: #09090B;
+    font-family: var(--font-ui); color: #E4E4E7; font-size: 12.5px;
+  }
+  .desk-bar {
+    display: flex; align-items: center; gap: 6px; padding: 9px 13px;
+    background: #131316; border-bottom: 1px solid #26262D;
+  }
+  .tl { width: 10px; height: 10px; border-radius: 999px; }
+  .desk-body { display: grid; grid-template-columns: 156px 1fr; min-height: 340px; }
+  .side { background: #131316; border-right: 1px solid #26262D; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+  .side .brand { padding: 4px 8px 12px; }
+  .side a {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+    color: #A1A1AA; text-decoration: none; font-size: 12px;
+  }
+  .side a.on { background: rgba(245,158,11,.11); color: var(--zt-gold2); font-weight: 600; }
+  .main { padding: 18px; display: flex; flex-direction: column; gap: 16px; overflow-x: auto; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; }
+  .tile { background: #131316; border: 1px solid #26262D; border-radius: 9px; padding: 11px 12px; }
+  .tile .k { font-size: 10.5px; color: #A1A1AA; }
+  .tile .v { font-size: 20px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    text-align: left; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    color: #71717A; font-weight: 600; padding: 7px 10px; border-bottom: 1px solid #26262D;
+  }
+  td { padding: 9px 10px; border-bottom: 1px solid #1D1D22; vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+
+  .panel-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .panel { background: #131316; border: 1px solid #26262D; border-radius: 9px; padding: 13px; }
+  .panel h4 { margin: 0 0 9px; font-size: 12.5px; font-weight: 650; }
+
+  .scroll-x { overflow-x: auto; }
+
+  /* ---------- Callout ---------- */
+  .callout {
+    margin-top: 34px; border: 1px solid var(--pg-rule); border-left: 3px solid var(--pg-accent);
+    background: var(--pg-panel); border-radius: 4px; padding: 18px 22px;
+  }
+  .callout h3 { margin: 0 0 8px; font-size: 16px; font-weight: 700; }
+  .callout p { margin: 0 0 8px; font-size: 14.5px; color: var(--pg-muted); max-width: 68ch; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; background: var(--pg-bg); border: 1px solid var(--pg-rule);
+    border-radius: 3px; padding: 1px 5px;
+  }
+
+  footer {
+    margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--pg-rule);
+    font-family: var(--font-ui); font-size: 12.5px; color: var(--pg-muted);
+  }
+
+  @media (max-width: 860px) {
+    .desk-body { grid-template-columns: 1fr; }
+    .side { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid #26262D; }
+    .side .brand { display: none; }
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .panel-2 { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Screen preview · built, not mocked</p>
+    <h1>Zitto</h1>
+    <p class="lede">
+      Dragon Tiger played with virtual coins, with an analytics layer that is honest about what
+      statistics can and cannot tell you. These are the screens as they exist in the codebase today.
+    </p>
+    <div class="meta-row">
+      <span><b>199</b> files</span>
+      <span><b>40</b> database models</span>
+      <span><b>66</b> API source files</span>
+      <span><b>12</b> player screens</span>
+      <span><b>5</b> admin screens</span>
+    </div>
+  </header>
+
+  <!-- ==================== PLAYER APP ==================== -->
+  <section>
+    <div class="sec-head">
+      <h2>Player app</h2>
+      <p class="sec-note">
+        Mobile-first, one-handed reach, dark throughout. Dragon reads red, Tiger reads blue, gold is
+        reserved for the coin economy — so a colour never means two things at once.
+      </p>
+    </div>
+
+    <div class="screens">
+
+      <!-- ---------- HOME ---------- -->
+      <figure>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>▮▮▮ ⌁ 82%</span></div>
+          <div class="screen">
+            <div class="stack">
+              <span class="xs muted">Good evening</span>
+              <span class="lg">Rajkumar</span>
+            </div>
+
+            <div class="card" style="background:linear-gradient(135deg,#1C1C26,#13131A);">
+              <div class="row">
+                <div class="stack">
+                  <span class="xs muted">Virtual balance</span>
+                  <span class="xl gold">7,240</span>
+                </div>
+                <span class="badge b-amber">Coins</span>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <span class="btn btn-primary">Play Now</span>
+              <span class="btn btn-outline">Analytics</span>
+            </div>
+
+            <div class="card tight">
+              <div class="row">
+                <div class="stack">
+                  <span class="sm" style="font-weight:600;">Daily reward</span>
+                  <span class="xs muted">Streak: day 4</span>
+                </div>
+                <span class="btn btn-primary" style="padding:7px 13px;">+100</span>
+              </div>
+            </div>
+
+            <div class="stack" style="gap:7px;">
+              <span class="xs muted" style="letter-spacing:.06em;text-transform:uppercase;">Recent rounds</span>
+              <div class="hist">
+                <span class="dot" style="background:var(--zt-dragon)">D</span>
+                <span class="dot" style="background:var(--zt-tiger)">T</span>
+                <span class="dot" style="background:var(--zt-dragon)">D</span>
+                <span class="dot" style="background:var(--zt-dragon)">D</span>
+                <span class="dot" style="background:var(--zt-gold);color:#2A1A02">=</span>
+                <span class="dot" style="background:var(--zt-tiger)">T</span>
+                <span class="dot" style="background:var(--zt-dragon)">D</span>
+              </div>
+            </div>
+
+            <div class="card tight">
+              <div class="row">
+                <span class="sm" style="font-weight:600;">Weekend Cup</span>
+                <span class="badge b-green">Live</span>
+              </div>
+              <div class="row" style="margin-top:6px;">
+                <span class="xs muted">312 players · ends in 4h</span>
+                <span class="xs gold" style="font-weight:600;">50,000 pool</span>
+              </div>
+            </div>
+
+            <div class="card tight" style="border-color:rgba(245,158,11,.28);background:rgba(245,158,11,.05);">
+              <span class="xs" style="color:var(--zt-gold2);line-height:1.5;">
+                Coins have no cash value. Every round is independent.
+              </span>
+            </div>
+          </div>
+
+          <nav class="bnav">
+            <div class="on"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</div>
+            <div><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M8 12h3M9.5 10.5v3"/><circle cx="16" cy="12" r="1"/></svg>Game</div>
+            <div><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Stats</div>
+            <div><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M3 12h18M12 8v12M12 8s-3-5-5-3 1 3 5 3zm0 0s3-5 5-3-1 3-5 3z"/></svg>Rewards</div>
+            <div><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>Profile</div>
+          </nav>
+        </div>
+        <figcaption>
+          <b>Home</b>
+          Balance, one primary action, and the virtual-currency notice sitting in the flow rather than buried in a footer.
+        </figcaption>
+      </figure>
+
+      <!-- ---------- GAME ROOM ---------- -->
+      <figure>
+        <div class="phone">
+          <div class="status-bar"><span>9:43</span><span>▮▮▮ ⌁ 81%</span></div>
+          <div class="screen">
+            <div class="row">
+              <span class="sm muted">← Round #4,821</span>
+              <span class="row" style="gap:6px;">
+                <span class="badge b-green">Live</span>
+                <span class="sm gold" style="font-weight:650;">7,240</span>
+              </span>
+            </div>
+
+            <div class="card" style="padding:15px 13px;">
+              <div class="pcards">
+                <div class="stack" style="gap:6px;">
+                  <span class="xs dragon" style="text-align:center;font-weight:700;letter-spacing:.08em;">DRAGON</span>
+                  <div class="pcard" style="color:var(--zt-dragon);">
+                    <span>K♦</span><span class="btm">K♦</span>
+                  </div>
+                </div>
+                <div class="stack" style="gap:4px;align-items:center;">
+                  <span class="xs muted">VS</span>
+                  <span class="badge b-amber">TIE 8×</span>
+                </div>
+                <div class="stack" style="gap:6px;">
+                  <span class="xs tiger" style="text-align:center;font-weight:700;letter-spacing:.08em;">TIGER</span>
+                  <div class="pcard back"></div>
+                </div>
+              </div>
+
+              <div class="stack" style="gap:5px;margin-top:13px;">
+                <div class="row">
+                  <span class="xs muted">Betting closes</span>
+                  <span class="sm gold" style="font-weight:700;font-variant-numeric:tabular-nums;">0:07</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" style="width:35%;background:var(--zt-gold);"></div></div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <span class="btn btn-dragon" style="flex-direction:column;gap:1px;padding:12px;">
+                Dragon<span style="font-size:10px;opacity:.85;font-weight:500;">1.95×</span>
+              </span>
+              <span class="btn btn-outline" style="flex-direction:column;gap:1px;padding:12px;border-color:rgba(37,99,235,.5);color:var(--zt-tiger2);">
+                Tiger<span style="font-size:10px;opacity:.85;font-weight:500;">1.95×</span>
+              </span>
+            </div>
+
+            <div class="stack" style="gap:7px;">
+              <div class="row">
+                <span class="xs muted">Stake</span>
+                <span class="sm" style="font-weight:650;">250 coins</span>
+              </div>
+              <div class="chips">
+                <span class="chip">50</span>
+                <span class="chip">100</span>
+                <span class="chip on">250</span>
+                <span class="chip">500</span>
+                <span class="chip">Max</span>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
+              <span class="btn btn-ghost">Clear</span>
+              <span class="btn btn-primary">Confirm 250 on Dragon</span>
+            </div>
+
+            <div class="hist" style="padding-bottom:4px;">
+              <span class="dot" style="background:var(--zt-dragon)">D</span>
+              <span class="dot" style="background:var(--zt-tiger)">T</span>
+              <span class="dot" style="background:var(--zt-dragon)">D</span>
+              <span class="dot" style="background:var(--zt-dragon)">D</span>
+              <span class="dot" style="background:var(--zt-gold);color:#2A1A02">=</span>
+              <span class="dot" style="background:var(--zt-tiger)">T</span>
+              <span class="dot" style="background:var(--zt-dragon)">D</span>
+              <span class="dot" style="background:var(--zt-tiger)">T</span>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <b>Game room</b>
+          The confirm button restates side and stake, so what you are committing to is never hidden behind an icon.
+        </figcaption>
+      </figure>
+
+      <!-- ---------- ANALYTICS ---------- -->
+      <figure>
+        <div class="phone">
+          <div class="status-bar"><span>9:46</span><span>▮▮▮ ⌁ 80%</span></div>
+          <div class="screen">
+            <div class="stack">
+              <span class="lg">Analytics</span>
+              <span class="xs muted" style="line-height:1.5;">Statistical observations from your past rounds.</span>
+            </div>
+
+            <div class="chips">
+              <span class="chip">10</span>
+              <span class="chip">25</span>
+              <span class="chip on">50</span>
+              <span class="chip">100</span>
+            </div>
+
+            <div class="card">
+              <span class="sm" style="font-weight:650;">Outcome distribution</span>
+              <div class="dist" style="margin-top:10px;">
+                <span style="width:44.7%;background:var(--zt-dragon);">44.7%</span>
+                <span style="width:40.4%;background:var(--zt-tiger);">40.4%</span>
+                <span style="width:14.9%;background:var(--zt-gold);color:#2A1A02;">14.9</span>
+              </div>
+              <div class="row" style="margin-top:9px;">
+                <span class="xs dragon">Dragon 21</span>
+                <span class="xs tiger">Tiger 19</span>
+                <span class="xs gold">Tie 7</span>
+              </div>
+              <div class="meta-foot">
+                <div class="facts">
+                  <span>47 rounds</span><span>·</span>
+                  <span>Rolling frequency</span><span>·</span>
+                  <span class="badge b-amber">Low confidence</span>
+                </div>
+                <span class="disc">Each round is independent. Historical frequencies describe past rounds only.</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <span class="sm" style="font-weight:650;">Model estimate</span>
+              <div class="row" style="margin-top:9px;">
+                <div class="stack">
+                  <span class="lg dragon">Dragon</span>
+                  <span class="xs muted">Historical tendency — not a prediction</span>
+                </div>
+                <span class="badge b-amber">Low</span>
+              </div>
+              <div class="meta-foot">
+                <div class="facts">
+                  <span>47 rounds</span><span>·</span>
+                  <span>Confidence capped at "low"</span>
+                </div>
+                <span class="disc">Each round is independent. Historical frequencies cannot determine future outcomes.</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <span class="sm" style="font-weight:650;">Tie frequency</span>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 0 6px;">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--zt-muted)" stroke-width="1.6">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.2v.3"/>
+                </svg>
+                <span class="sm" style="font-weight:600;">Not enough data</span>
+                <span class="xs muted">6 rounds found — 10 needed.</span>
+              </div>
+              <div class="meta-foot">
+                <div class="facts">
+                  <span>6 rounds</span><span>·</span>
+                  <span class="badge b-grey">Insufficient data</span>
+                </div>
+                <span class="disc">No estimate is shown below the minimum sample size.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <b>Analytics</b>
+          Every card carries sample size, method, confidence and disclaimer. The third card shows the refusal
+          state — below minimum sample, no number is shown at all.
+        </figcaption>
+      </figure>
+
+      <!-- ---------- WALLET ---------- -->
+      <figure>
+        <div class="phone">
+          <div class="status-bar"><span>9:48</span><span>▮▮▮ ⌁ 79%</span></div>
+          <div class="screen">
+            <div class="stack">
+              <span class="lg">Virtual wallet</span>
+              <span class="xs muted">Coins have no cash value and cannot be withdrawn.</span>
+            </div>
+
+            <div class="card" style="text-align:center;padding:18px 13px;">
+              <div class="xl gold" style="font-size:34px;">7,240</div>
+              <div class="xs muted" style="margin-top:3px;">Available balance</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="card tight" style="text-align:center;">
+                <div class="lg">1,150</div><div class="xs muted">Bonus</div>
+              </div>
+              <div class="card tight" style="text-align:center;">
+                <div class="lg">250</div><div class="xs muted">Locked</div>
+              </div>
+            </div>
+
+            <div class="chips">
+              <span class="chip on">All</span>
+              <span class="chip">Credits</span>
+              <span class="chip">Debits</span>
+            </div>
+
+            <div class="card" style="padding:4px 13px;">
+              <div class="row" style="padding:10px 0;border-bottom:1px solid var(--zt-border);">
+                <div class="stack"><span class="sm">Win</span><span class="xs muted">Round #4,820</span></div>
+                <div class="stack" style="text-align:right;">
+                  <span class="sm green" style="font-weight:650;">+488</span><span class="xs muted">7,240</span>
+                </div>
+              </div>
+              <div class="row" style="padding:10px 0;border-bottom:1px solid var(--zt-border);">
+                <div class="stack"><span class="sm">Bet placed</span><span class="xs muted">Round #4,820</span></div>
+                <div class="stack" style="text-align:right;">
+                  <span class="sm dragon" style="font-weight:650;">−250</span><span class="xs muted">6,752</span>
+                </div>
+              </div>
+              <div class="row" style="padding:10px 0;border-bottom:1px solid var(--zt-border);">
+                <div class="stack"><span class="sm">Daily reward</span><span class="xs muted">Today, 9:41</span></div>
+                <div class="stack" style="text-align:right;">
+                  <span class="sm green" style="font-weight:650;">+100</span><span class="xs muted">7,002</span>
+                </div>
+              </div>
+              <div class="row" style="padding:10px 0;">
+                <div class="stack"><span class="sm">Welcome bonus</span><span class="xs muted">4 Aug</span></div>
+                <div class="stack" style="text-align:right;">
+                  <span class="sm green" style="font-weight:650;">+500</span><span class="xs muted">500</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <b>Wallet</b>
+          Running balance sits under every entry — the ledger is the source of truth, the balance is derived from it.
+        </figcaption>
+      </figure>
+
+      <!-- ---------- REWARDS ---------- -->
+      <figure>
+        <div class="phone">
+          <div class="status-bar"><span>9:50</span><span>▮▮▮ ⌁ 78%</span></div>
+          <div class="screen">
+            <span class="lg">Rewards</span>
+
+            <div class="card" style="border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05);">
+              <div class="row">
+                <div class="stack">
+                  <span class="sm" style="font-weight:650;">Daily login reward</span>
+                  <span class="xl gold" style="font-size:24px;">+100</span>
+                  <span class="xs green">✓ Claimed today</span>
+                </div>
+                <span class="btn btn-ghost" aria-disabled="true">Claimed</span>
+              </div>
+            </div>
+
+            <div class="stack" style="gap:7px;">
+              <span class="sm" style="font-weight:650;">Promo code</span>
+              <div style="display:grid;grid-template-columns:1fr auto;gap:7px;">
+                <span class="card tight muted xs" style="padding:10px 12px;">Enter code…</span>
+                <span class="btn btn-outline" aria-disabled="true">Redeem</span>
+              </div>
+            </div>
+
+            <span class="sm" style="font-weight:650;">Daily missions</span>
+
+            <div class="card tight">
+              <div class="row" style="align-items:flex-start;">
+                <div class="stack" style="flex:1;">
+                  <span class="sm" style="font-weight:600;">Play 10 rounds</span>
+                  <span class="xs muted">Any game mode</span>
+                </div>
+                <span class="sm gold" style="font-weight:650;">+150</span>
+              </div>
+              <div class="row xs muted" style="margin:8px 0 4px;"><span>7 / 10</span><span>70%</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:70%;background:var(--zt-gold);"></div></div>
+            </div>
+
+            <div class="card tight">
+              <div class="row" style="align-items:flex-start;">
+                <div class="stack" style="flex:1;">
+                  <span class="row" style="gap:6px;justify-content:flex-start;">
+                    <span class="sm" style="font-weight:600;">Check your analytics</span>
+                    <span class="badge b-green">Done</span>
+                  </span>
+                  <span class="xs muted">Open the analytics tab once</span>
+                </div>
+                <div class="stack" style="align-items:flex-end;">
+                  <span class="sm gold" style="font-weight:650;">+50</span>
+                  <span class="btn btn-primary" style="padding:4px 10px;font-size:11px;margin-top:3px;">Claim</span>
+                </div>
+              </div>
+              <div class="row xs muted" style="margin:8px 0 4px;"><span>1 / 1</span><span>100%</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--zt-green);"></div></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <b>Rewards</b>
+          Claimed states are shown as disabled with a reason, never as a live button that silently does nothing.
+        </figcaption>
+      </figure>
+
+      <!-- ---------- RESPONSIBLE GAMING ---------- -->
+      <figure>
+        <div class="phone">
+          <div class="status-bar"><span>9:52</span><span>▮▮▮ ⌁ 77%</span></div>
+          <div class="screen">
+            <div class="stack">
+              <span class="lg">Responsible gaming</span>
+              <span class="xs muted">Your wellbeing matters. These tools keep you in control.</span>
+            </div>
+
+            <div class="card" style="border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05);">
+              <div class="stack" style="gap:8px;">
+                <span class="xs" style="color:var(--zt-gold2);line-height:1.5;">
+                  Zitto uses <b>virtual coins only</b> — no real money is involved.
+                </span>
+                <span class="xs" style="color:var(--zt-gold2);line-height:1.5;">
+                  Every round is <b>independent and random</b>. No pattern or analytics can predict the next outcome.
+                </span>
+                <span class="xs" style="color:var(--zt-gold2);line-height:1.5;">
+                  Playing longer than you meant to? <b>Take a break</b> or use self-exclusion below.
+                </span>
+              </div>
+            </div>
+
+            <div class="card">
+              <span class="sm" style="font-weight:650;">Session time limit</span>
+              <p class="xs muted" style="margin:5px 0 9px;">Remind me after I have been playing for:</p>
+              <div class="chips">
+                <span class="chip">30 min</span>
+                <span class="chip on">60 min</span>
+                <span class="chip">90 min</span>
+                <span class="chip">120 min</span>
+              </div>
+            </div>
+
+            <div class="card" style="border-color:rgba(220,38,38,.32);">
+              <span class="sm dragon" style="font-weight:650;">Self-exclusion</span>
+              <p class="xs muted" style="margin:6px 0 10px;line-height:1.5;">
+                Blocks your account and ends all sessions immediately. This cannot be undone before the period ends.
+              </p>
+              <span class="btn btn-dragon btn-block">Set up self-exclusion</span>
+            </div>
+
+            <div class="stack" style="gap:6px;padding-bottom:6px;">
+              <span class="xs muted" style="letter-spacing:.06em;text-transform:uppercase;">Support resources</span>
+              <div class="card tight">
+                <div class="row"><span class="sm">iCall</span><span class="sm gold">9152987821</span></div>
+              </div>
+              <div class="card tight">
+                <div class="row"><span class="sm">Vandrevala Foundation</span><span class="sm gold">1860-2662-345</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <b>Responsible gaming</b>
+          A real screen with its own tab, not a link in the footer. Self-exclusion states the consequence before the button.
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- ==================== ADMIN ==================== -->
+  <section>
+    <div class="sec-head">
+      <h2>Admin console</h2>
+      <p class="sec-note">
+        Desktop-first, deliberately plainer than the player app — this is a working surface, not a
+        showroom. Destructive actions stay behind a mandatory reason field that lands in the audit log.
+      </p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:34px;margin-top:32px;">
+
+      <figure>
+        <div class="desk">
+          <div class="desk-bar">
+            <span class="tl" style="background:#FF5F57"></span>
+            <span class="tl" style="background:#FEBC2E"></span>
+            <span class="tl" style="background:#28C840"></span>
+            <span style="margin-left:10px;font-size:11px;color:#71717A;">admin.zitto.app/dashboard</span>
+          </div>
+          <div class="desk-body">
+            <nav class="side">
+              <div class="brand">
+                <div style="font-weight:700;color:var(--zt-gold2);font-size:15px;">Zitto</div>
+                <div style="font-size:10px;color:#52525B;">Admin console</div>
+              </div>
+              <a class="on" href="#">Dashboard</a>
+              <a href="#">Users</a>
+              <a href="#">Game</a>
+              <a href="#">Analytics</a>
+              <a href="#">Tournaments</a>
+              <a href="#">Rewards</a>
+              <a href="#">CMS</a>
+              <a href="#">Support</a>
+              <a href="#">Audit logs</a>
+            </nav>
+            <div class="main">
+              <div>
+                <div style="font-size:18px;font-weight:700;">Dashboard</div>
+                <div style="font-size:11.5px;color:#71717A;">Platform overview — 9 Aug 2026</div>
+              </div>
+
+              <div class="tiles">
+                <div class="tile"><div class="k">Total users</div><div class="v">128,477</div></div>
+                <div class="tile"><div class="k">Active today</div><div class="v">14,902</div></div>
+                <div class="tile"><div class="k">Open tickets</div><div class="v" style="color:var(--zt-gold2);">37</div></div>
+                <div class="tile"><div class="k">Fraud alerts</div><div class="v" style="color:var(--zt-dragon2);">6</div></div>
+              </div>
+
+              <div class="panel-2">
+                <div class="panel">
+                  <h4>System health</h4>
+                  <div style="display:flex;flex-direction:column;gap:7px;">
+                    <div class="row"><span>API</span><span class="badge b-green">healthy</span></div>
+                    <div class="row"><span>Database</span><span class="badge b-green">healthy</span></div>
+                    <div class="row"><span>Redis</span><span class="badge b-green">healthy</span></div>
+                    <div class="row"><span>Game engine</span><span class="badge b-green">healthy</span></div>
+                    <div class="row"><span>Realtime</span><span class="badge b-amber">degraded</span></div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <h4>Recent activity</h4>
+                  <div style="display:flex;flex-direction:column;gap:8px;font-size:11.5px;">
+                    <div><div>user.status.suspended on user</div><div style="color:#52525B;">09:38:12</div></div>
+                    <div><div>wallet.admin_credit on user</div><div style="color:#52525B;">09:31:04</div></div>
+                    <div><div>settings.update on app_setting</div><div style="color:#52525B;">09:12:47</div></div>
+                    <div><div>round.void on game_round</div><div style="color:#52525B;">08:55:20</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption style="margin-top:12px;">
+          <b>Admin dashboard</b>
+          Severity is carried by colour and position, so the two numbers that need attention read before the two that don't.
+        </figcaption>
+      </figure>
+
+      <figure>
+        <div class="desk">
+          <div class="desk-bar">
+            <span class="tl" style="background:#FF5F57"></span>
+            <span class="tl" style="background:#FEBC2E"></span>
+            <span class="tl" style="background:#28C840"></span>
+            <span style="margin-left:10px;font-size:11px;color:#71717A;">admin.zitto.app/dashboard/users</span>
+          </div>
+          <div class="desk-body">
+            <nav class="side">
+              <div class="brand">
+                <div style="font-weight:700;color:var(--zt-gold2);font-size:15px;">Zitto</div>
+                <div style="font-size:10px;color:#52525B;">Admin console</div>
+              </div>
+              <a href="#">Dashboard</a>
+              <a class="on" href="#">Users</a>
+              <a href="#">Game</a>
+              <a href="#">Analytics</a>
+              <a href="#">Tournaments</a>
+              <a href="#">Rewards</a>
+              <a href="#">CMS</a>
+              <a href="#">Support</a>
+              <a href="#">Audit logs</a>
+            </nav>
+            <div class="main">
+              <div style="font-size:18px;font-weight:700;">Users</div>
+
+              <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                <span style="flex:1;min-width:170px;background:#131316;border:1px solid #26262D;border-radius:7px;padding:7px 11px;color:#52525B;font-size:11.5px;">Search email or name…</span>
+                <span class="chip on" style="font-size:11px;">all</span>
+                <span class="chip" style="font-size:11px;">active</span>
+                <span class="chip" style="font-size:11px;">suspended</span>
+                <span class="chip" style="font-size:11px;">self excluded</span>
+              </div>
+
+              <div class="scroll-x" style="border:1px solid #26262D;border-radius:8px;">
+                <table>
+                  <thead>
+                    <tr><th scope="col">User</th><th scope="col">Status</th><th scope="col">Joined</th><th scope="col" style="text-align:right;">Actions</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><div style="color:var(--zt-gold2);font-weight:600;">Aarav Mehta</div><div style="font-size:10.5px;color:#71717A;">aarav.m@example.com</div></td>
+                      <td><span class="badge b-green">active</span></td>
+                      <td style="color:#A1A1AA;">12 Jul 2026</td>
+                      <td style="text-align:right;color:#A1A1AA;">View · <span style="color:var(--zt-dragon2);">Suspend</span></td>
+                    </tr>
+                    <tr>
+                      <td><div style="color:var(--zt-gold2);font-weight:600;">Priya Nair</div><div style="font-size:10.5px;color:#71717A;">priya.nair@example.com</div></td>
+                      <td><span class="badge b-red">suspended</span></td>
+                      <td style="color:#A1A1AA;">03 Jun 2026</td>
+                      <td style="text-align:right;color:#A1A1AA;">View · <span class="green">Activate</span></td>
+                    </tr>
+                    <tr>
+                      <td><div style="color:var(--zt-gold2);font-weight:600;">Rohan Das</div><div style="font-size:10.5px;color:#71717A;">rohan.das@example.com</div></td>
+                      <td><span class="badge b-grey">self excluded</span></td>
+                      <td style="color:#A1A1AA;">27 May 2026</td>
+                      <td style="text-align:right;color:#52525B;">View</td>
+                    </tr>
+                    <tr>
+                      <td><div style="color:var(--zt-gold2);font-weight:600;">Sneha Iyer</div><div style="font-size:10.5px;color:#71717A;">sneha.iyer@example.com</div></td>
+                      <td><span class="badge b-green">active</span></td>
+                      <td style="color:#A1A1AA;">19 May 2026</td>
+                      <td style="text-align:right;color:#A1A1AA;">View · <span style="color:var(--zt-dragon2);">Suspend</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="panel" style="border-color:rgba(220,38,38,.34);">
+                <h4 style="color:var(--zt-dragon2);">Suspend user?</h4>
+                <p style="margin:0 0 9px;font-size:11.5px;color:#A1A1AA;">
+                  This will immediately revoke all active sessions. The user will see a suspension notice.
+                </p>
+                <div style="background:#09090B;border:1px solid #26262D;border-radius:6px;padding:8px 10px;font-size:11.5px;color:#52525B;">
+                  Describe the reason for suspension…
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px;">
+                  <span style="font-size:10.5px;color:#71717A;">This reason is written to the audit log.</span>
+                  <span style="display:flex;gap:7px;">
+                    <span class="btn btn-ghost" style="padding:6px 12px;font-size:11.5px;">Cancel</span>
+                    <span class="btn btn-dragon" style="padding:6px 12px;font-size:11.5px;opacity:.45;">Suspend</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption style="margin-top:12px;">
+          <b>Users — suspend flow</b>
+          The confirm button stays disabled until a reason is typed. There is no path to a status change without one.
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <div class="callout">
+    <h3>What is real and what is not</h3>
+    <p>
+      Every screen above is rendered from the components and design tokens in the repository — the colours,
+      spacing and copy match <code>apps/web</code> and <code>apps/admin</code> as built.
+    </p>
+    <p>
+      The numbers are fixture data. The pages currently read from <code>lib/mock-data.ts</code>; switching a page
+      onto the live API is a one-line change in its query function. The API, database schema and game engine
+      are written but have not been run yet — Node and Postgres are not installed on this machine, which is
+      the next thing to sort out.
+    </p>
+  </div>
+
+  <footer>
+    Zitto · virtual-coin platform · no real-money functionality is enabled
+  </footer>
+
+</div>
