@@ -16,7 +16,7 @@ export default function AuditLogsPage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <ScrollText className="h-5 w-5 text-gold-400" />
+          <ScrollText className="h-5 w-5 text-brand-400" />
           Audit Logs
         </h1>
         <div className="flex items-center gap-2 mt-2 text-sm text-zinc-400 bg-zinc-800/50 rounded-lg px-3 py-2 w-fit">
@@ -48,7 +48,7 @@ export default function AuditLogsPage() {
             </TableHeader>
             <TableBody>
               {mockAuditLogs.map((log) => (
-                <Tr key={log.id}>
+                <TableRow key={log.id}>
                   <TableCell className="text-xs text-zinc-400 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export default function AuditLogsPage() {
                       <span className="text-xs text-zinc-300 font-mono">{log.actorId?.slice(0, 8)}…</span>
                     </div>
                   </TableCell>
-                  <TableCell><span className="text-xs font-mono text-gold-300">{log.action}</span></TableCell>
+                  <TableCell><span className="text-xs font-mono text-brand-300">{log.action}</span></TableCell>
                   <TableCell>
                     <div className="text-xs text-zinc-400">
                       <span className="text-zinc-500">{log.targetType}</span>

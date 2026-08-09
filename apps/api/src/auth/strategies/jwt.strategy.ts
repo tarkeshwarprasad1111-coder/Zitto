@@ -103,7 +103,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         status: true,
         locale: true,
         deletedAt: true,
-        userRoles: { select: { role: { select: { code: true } } } },
+        roles: { select: { role: { select: { code: true } } } },
       },
     });
 
@@ -120,7 +120,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       displayName: user.displayName,
       status: user.status,
       locale: user.locale,
-      roles: user.userRoles.map((assignment) => assignment.role.code),
+      roles: user.roles.map((assignment) => assignment.role.code),
       sessionId: session.id,
     };
 

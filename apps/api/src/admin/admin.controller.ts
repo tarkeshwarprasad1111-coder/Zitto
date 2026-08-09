@@ -6,7 +6,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserStatus } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Idempotent } from '../common/decorators/idempotent.decorator';
-import { RequestContext, RequestContextData } from '../common/decorators/request-context.decorator';
+import {
+  ReqContext,
+  requireIdempotencyKey,
+  type RequestContextData,
+} from '../common/decorators/request-context.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
 import { AdminService } from './admin.service';
@@ -76,9 +80,9 @@ export class AdminController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreditDto,
     @CurrentUser() user: AuthenticatedUser,
-    @RequestContext() ctx: RequestContextData,
+    @ReqContext() ctx: RequestContextData,
   ) {
-    return this.admin.creditUser(user.id, id, dto.amount, dto.reason, ctx.idempotencyKey ?? user.id);
+    return this.admin.creditUser(user.id, id, dto.amount, dto.reason, requireIdempotencyKey(ctx));
   }
 
   @Get('audit-logs')

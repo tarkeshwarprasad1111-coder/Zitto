@@ -2,7 +2,11 @@ import { Controller, Get, Param, ParseUUIDPipe, Post, Query, DefaultValuePipe, P
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Idempotent } from '../common/decorators/idempotent.decorator';
-import { RequestContext, RequestContextData } from '../common/decorators/request-context.decorator';
+import {
+  ReqContext,
+  requireIdempotencyKey,
+  type RequestContextData,
+} from '../common/decorators/request-context.decorator';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
 import { TournamentsService } from './tournaments.service';
 
@@ -34,9 +38,9 @@ export class TournamentsController {
   join(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
-    @RequestContext() ctx: RequestContextData,
+    @ReqContext() ctx: RequestContextData,
   ) {
-    return this.tournaments.join(user.id, id, ctx.idempotencyKey ?? user.id);
+    return this.tournaments.join(user.id, id, requireIdempotencyKey(ctx));
   }
 
   @Get(':id/leaderboard')

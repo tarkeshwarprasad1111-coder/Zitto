@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, UserX, UserCheck, Coins } from 'lucide-react';
+import { Search, UserX, UserCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,11 +18,15 @@ export default function UsersPage() {
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [suspendTarget, setSuspendTarget] = useState<string | null>(null);
-  const [reason, setReason] = useState('');
   const loading = false;
 
   const filtered = mockUsers.filter((u) => {
-    const matchQ = !q || u.email.includes(q) || u.displayName.toLowerCase().includes(q.toLowerCase());
+    // `email` is nullable — roughly one in seven accounts registered by mobile only.
+    const needle = q.toLowerCase();
+    const matchQ =
+      !q ||
+      (u.email?.toLowerCase().includes(needle) ?? false) ||
+      u.displayName.toLowerCase().includes(needle);
     const matchStatus = statusFilter === 'all' || u.status === statusFilter;
     return matchQ && matchStatus;
   });
@@ -40,7 +43,7 @@ export default function UsersPage() {
         </div>
         <div className="flex gap-2">
           {(['all', 'active', 'suspended', 'self_excluded'] as StatusFilter[]).map((s) => (
-            <Button key={s} size="sm" variant={statusFilter === s ? 'default' : 'outline'} onClick={() => setStatusFilter(s)} className="capitalize text-xs">
+            <Button key={s} size="sm" variant={statusFilter === s ? 'primary' : 'outline'} onClick={() => setStatusFilter(s)} className="capitalize text-xs">
               {s.replace('_', ' ')}
             </Button>
           ))}
@@ -65,13 +68,14 @@ export default function UsersPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((u) => (
-                <Tr key={u.id}>
+                <TableRow key={u.id}>
                   <TableCell>
                     <div>
-                      <Link href={`/dashboard/users/${u.id}`} className="font-medium text-gold-400 hover:underline">
+                      <Link href={`/dashboard/users/${u.id}`} className="font-medium text-brand-400 hover:underline">
                         {u.displayName}
                       </Link>
-                      <p className="text-xs text-zinc-400">{u.email}</p>
+                      {/* Mobile-only accounts have no email — show the gap rather than an empty row. */}
+                      <p className="text-xs text-zinc-400">{u.email ?? 'mobile only'}</p>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -108,28 +112,30 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Suspend confirm — reason mandatory */}
+      {/*
+        ConfirmDialog supplies the mandatory reason field itself — it enforces a
+        minimum length and hands the trimmed text to onConfirm. Rolling our own
+        textarea here would duplicate that and, worse, let the two validations drift.
+      */}
       <ConfirmDialog
         open={!!suspendTarget}
-        onClose={() => { setSuspendTarget(null); setReason(''); }}
-        onConfirm={() => { /* TODO: PATCH /admin/users/:id/status */ setSuspendTarget(null); setReason(''); }}
+        onClose={() => setSuspendTarget(null)}
+        onConfirm={(reason) => {
+          // TODO: PATCH /admin/users/:id/status { status: 'suspended', reason }
+          void reason;
+          setSuspendTarget(null);
+        }}
         title="Suspend user?"
         description="This will immediately revoke all active sessions. The user will see a suspension notice."
+        consequences={[
+          'All active sessions are signed out immediately.',
+          'The reason you give is written to the audit log and cannot be edited later.',
+        ]}
         confirmLabel="Suspend"
-        variant="destructive"
-        disabled={!reason.trim()}
-      >
-        <div className="mt-3">
-          <label className="text-sm font-medium block mb-1">Reason (required)</label>
-          <textarea
-            className="w-full rounded-md border border-zinc-700 bg-zinc-800 text-sm p-2 resize-none h-20 focus:outline-none focus:ring-1 focus:ring-gold-500"
-            placeholder="Describe the reason for suspension…"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-          <p className="text-xs text-zinc-500 mt-1">This reason will be written to the audit log.</p>
-        </div>
-      </ConfirmDialog>
+        tone="danger"
+        reasonLabel="Reason (required)"
+        reasonPlaceholder="Describe the reason for suspension…"
+      />
     </div>
   );
 }

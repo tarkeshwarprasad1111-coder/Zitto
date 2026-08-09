@@ -36,6 +36,10 @@ export const REDIS_KEY = {
   dailyReward: (userId: string, day: string) => `reward:daily:${userId}:${day}`,
   walletLock: (userId: string) => `lock:wallet:${userId}`,
   analyticsSummary: (window: number, roomId: string) => `analytics:sum:${roomId}:${window}`,
+  // Separate namespace from the per-room key: a user id and a room id are both
+  // uuids, so sharing one namespace would let a room cache answer a user query.
+  analyticsUserSummary: (window: number, userId: string) =>
+    `analytics:user-sum:${userId}:${window}`,
   sessionRevoked: (sessionId: string) => `session:revoked:${sessionId}`,
 } as const;
 

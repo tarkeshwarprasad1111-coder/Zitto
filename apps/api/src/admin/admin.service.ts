@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { UserStatus } from '@prisma/client';
+import { ActorType, LedgerType, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { LEDGER_SOURCE } from '../common/constants';
@@ -28,9 +28,11 @@ export class AdminService {
       where: {
         ...(q ? { OR: [{ email: { contains: q } }, { displayName: { contains: q } }] } : {}),
         ...(status ? { status } : {}),
-        ...(cursor ? { id: { lt: cursor } } : {}),
       },
-      orderBy: { createdAt: 'desc' },
+      // Prisma's cursor follows the sort order; an `id < cursor` filter does not,
+      // so pages would skip and repeat rows.
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
       select: {
         id: true, displayName: true, email: true, mobile: true,
@@ -46,7 +48,7 @@ export class AdminService {
       include: {
         wallet: true,
         sessions: { take: 5, orderBy: { createdAt: 'desc' } },
-        userRoles: { include: { role: true } },
+        roles: { include: { role: true } },
       },
     });
     if (!user) throw new NotFoundException('User not found.');
@@ -76,7 +78,17 @@ export class AdminService {
 
   async creditUser(adminId: string, userId: string, amount: bigint, reason: string, idempotencyKey: string) {
     if (!reason?.trim()) throw new BadRequestException('Reason is required for admin credits.');
-    const result = await this.wallet.credit(userId, amount, LEDGER_SOURCE.ADMIN, adminId, idempotencyKey);
+    const result = await this.wallet.credit({
+      userId,
+      amount,
+      type: LedgerType.ADMIN_CREDIT,
+      sourceType: LEDGER_SOURCE.ADMIN,
+      sourceId: adminId,
+      idempotencyKey,
+      actorType: ActorType.ADMIN,
+      actorId: adminId,
+      metadata: { reason },
+    });
     await this.prisma.auditLog.create({
       data: {
         actorType: 'ADMIN', actorId: adminId,
@@ -95,9 +107,9 @@ export class AdminService {
         ...(action ? { action: { contains: action } } : {}),
         ...(target ? { targetId: target } : {}),
         ...(from || to ? { createdAt: { gte: from, lte: to } } : {}),
-        ...(cursor ? { id: { lt: cursor } } : {}),
       },
-      orderBy: { createdAt: 'desc' },
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
     });
     return buildPage(rows, limit);

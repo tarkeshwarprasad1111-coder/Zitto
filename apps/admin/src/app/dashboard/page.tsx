@@ -25,8 +25,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile label="Total Users" value={d.totalUsers.toLocaleString()} icon={<Users className="h-4 w-4" />} />
         <StatTile label="Active Today" value={d.activeToday.toLocaleString()} icon={<Gamepad2 className="h-4 w-4" />} />
-        <StatTile label="Open Tickets" value={d.openTickets.toString()} icon={<Ticket className="h-4 w-4" />} alert={d.openTickets > 10} />
-        <StatTile label="Fraud Alerts" value={d.fraudAlerts.toString()} icon={<AlertCircle className="h-4 w-4" />} alert={d.fraudAlerts > 0} />
+        <StatTile label="Open Tickets" value={d.openTickets.toString()} icon={<Ticket className="h-4 w-4" />} tone={d.openTickets > 10 ? 'warning' : 'default'} />
+        <StatTile label="Fraud Alerts" value={d.fraudAlerts.toString()} icon={<AlertCircle className="h-4 w-4" />} tone={d.fraudAlerts > 0 ? 'danger' : 'default'} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

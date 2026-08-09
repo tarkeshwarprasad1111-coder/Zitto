@@ -35,8 +35,8 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gold-500/10">
-            <Shield className="h-6 w-6 text-gold-400" />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-500/10">
+            <Shield className="h-6 w-6 text-brand-400" />
           </div>
           <CardTitle className="text-xl">Zitto Admin</CardTitle>
           <p className="text-sm text-zinc-400">Authorised personnel only</p>

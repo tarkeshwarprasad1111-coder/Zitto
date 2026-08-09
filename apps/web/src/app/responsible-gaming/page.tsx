@@ -103,7 +103,7 @@ export default function ResponsibleGamingPage() {
               Temporarily or permanently block yourself from the platform. This action will immediately log you out and
               cancel any active sessions. It <strong>cannot be undone</strong> before the exclusion period ends.
             </p>
-            <Button variant="destructive" onClick={() => setShowExclusionModal(true)}>
+            <Button variant="danger" onClick={() => setShowExclusionModal(true)}>
               Set Up Self-Exclusion
             </Button>
           </CardContent>
@@ -141,7 +141,8 @@ export default function ResponsibleGamingPage() {
                 <Button
                   key={d.value}
                   size="sm"
-                  variant={selectedDuration === d.value ? 'destructive' : 'outline'}
+                  variant={selectedDuration === d.value ? 'danger' : 'outline'}
+                  aria-pressed={selectedDuration === d.value}
                   onClick={() => setSelectedDuration(d.value)}
                 >
                   {d.label}
@@ -159,7 +160,7 @@ export default function ResponsibleGamingPage() {
               placeholder={CONFIRM_PHRASE}
             />
           </div>
-          <Button variant="destructive" disabled={!canConfirm} className="w-full">
+          <Button variant="danger" disabled={!canConfirm} className="w-full">
             Confirm Self-Exclusion
           </Button>
         </div>

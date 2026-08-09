@@ -52,7 +52,7 @@ const USER_SELECT = {
   emailVerifiedAt: true,
   mobileVerifiedAt: true,
   deletedAt: true,
-  userRoles: { select: { role: { select: { code: true } } } },
+  roles: { select: { role: { select: { code: true } } } },
 } satisfies Prisma.UserSelect;
 
 type UserWithRoles = Prisma.UserGetPayload<{ select: typeof USER_SELECT }>;
@@ -450,7 +450,7 @@ export class AuthService {
     const pair = await this.tokens.issuePair({
       userId: user.id,
       sessionId: newSessionId,
-      roles: user.userRoles.map((assignment) => assignment.role.code),
+      roles: user.roles.map((assignment) => assignment.role.code),
     });
 
     await this.prisma.userSession.update({
@@ -642,7 +642,7 @@ export class AuthService {
     const pair = await this.tokens.issuePair({
       userId: user.id,
       sessionId: session.id,
-      roles: user.userRoles.map((assignment) => assignment.role.code),
+      roles: user.roles.map((assignment) => assignment.role.code),
     });
 
     await this.prisma.userSession.update({
@@ -864,7 +864,7 @@ export class AuthService {
       displayName: user.displayName,
       status: user.status,
       locale: user.locale,
-      roles: user.userRoles.map((assignment) => assignment.role.code),
+      roles: user.roles.map((assignment) => assignment.role.code),
       verified: user.emailVerifiedAt !== null || user.mobileVerifiedAt !== null,
     };
   }

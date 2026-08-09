@@ -2,7 +2,11 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/commo
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Idempotent } from '../common/decorators/idempotent.decorator';
-import { RequestContext, RequestContextData } from '../common/decorators/request-context.decorator';
+import {
+  ReqContext,
+  requireIdempotencyKey,
+  type RequestContextData,
+} from '../common/decorators/request-context.decorator';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
 import { RewardsService } from './rewards.service';
 import { createZodDto } from 'nestjs-zod';
@@ -22,9 +26,9 @@ export class RewardsController {
   @ApiOperation({ summary: 'Claim daily login reward (once per calendar day)' })
   claimDaily(
     @CurrentUser() user: AuthenticatedUser,
-    @RequestContext() ctx: RequestContextData,
+    @ReqContext() ctx: RequestContextData,
   ) {
-    return this.rewards.claimDailyReward(user.id, ctx.idempotencyKey ?? user.id);
+    return this.rewards.claimDailyReward(user.id, requireIdempotencyKey(ctx));
   }
 
   @Post('promo')
@@ -34,9 +38,9 @@ export class RewardsController {
   redeem(
     @Body() dto: RedeemPromoDto,
     @CurrentUser() user: AuthenticatedUser,
-    @RequestContext() ctx: RequestContextData,
+    @ReqContext() ctx: RequestContextData,
   ) {
-    return this.rewards.redeemPromo(user.id, dto.code, ctx.idempotencyKey ?? user.id);
+    return this.rewards.redeemPromo(user.id, dto.code, requireIdempotencyKey(ctx));
   }
 
   @Get('missions')

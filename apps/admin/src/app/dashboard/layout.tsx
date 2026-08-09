@@ -8,19 +8,26 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * `built: false` entries are shown but not clickable.
+ *
+ * Hiding them would be tidier, but an admin who cannot see that a surface is
+ * planned will go looking for it — or assume the platform lacks the capability.
+ * A visible, obviously-unavailable row answers the question without a 404.
+ */
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/users', label: 'Users', icon: Users },
-  { href: '/dashboard/game', label: 'Game', icon: Gamepad2 },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/dashboard/tournaments', label: 'Tournaments', icon: Trophy },
-  { href: '/dashboard/rewards', label: 'Rewards', icon: Gift },
-  { href: '/dashboard/cms', label: 'CMS', icon: FileText },
-  { href: '/dashboard/support', label: 'Support', icon: Headphones },
-  { href: '/dashboard/moderation', label: 'Moderation', icon: ShieldCheck },
-  { href: '/dashboard/audit-logs', label: 'Audit Logs', icon: ScrollText },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-];
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, built: true },
+  { href: '/dashboard/users', label: 'Users', icon: Users, built: true },
+  { href: '/dashboard/audit-logs', label: 'Audit Logs', icon: ScrollText, built: true },
+  { href: '/dashboard/game', label: 'Game', icon: Gamepad2, built: false },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3, built: false },
+  { href: '/dashboard/tournaments', label: 'Tournaments', icon: Trophy, built: false },
+  { href: '/dashboard/rewards', label: 'Rewards', icon: Gift, built: false },
+  { href: '/dashboard/cms', label: 'CMS', icon: FileText, built: false },
+  { href: '/dashboard/support', label: 'Support', icon: Headphones, built: false },
+  { href: '/dashboard/moderation', label: 'Moderation', icon: ShieldCheck, built: false },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings, built: false },
+] as const;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -30,20 +37,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside className="w-56 shrink-0 border-r border-zinc-800 bg-zinc-900 flex flex-col">
         <div className="p-4 border-b border-zinc-800">
-          <p className="font-bold text-gold-400 text-lg">Zitto</p>
+          <p className="font-bold text-brand-400 text-lg">Zitto</p>
           <p className="text-xs text-zinc-500">Admin Console</p>
         </div>
         <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ href, label, icon: Icon, built }) => {
             const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+
+            if (!built) {
+              return (
+                <span
+                  key={href}
+                  aria-disabled="true"
+                  title="Not built yet"
+                  className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-zinc-600 cursor-not-allowed"
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{label}</span>
+                  <span className="text-[10px] uppercase tracking-wide text-zinc-700">soon</span>
+                </span>
+              );
+            }
+
             return (
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                   active
-                    ? 'bg-gold-500/10 text-gold-400 font-medium'
+                    ? 'bg-brand-500/10 text-brand-400 font-medium'
                     : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100',
                 )}
               >

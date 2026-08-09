@@ -56,7 +56,7 @@ export default function ProfilePage() {
           {[
             { href: '/settings', label: 'Settings', icon: User },
             { href: '/settings/security', label: 'Security & Sessions', icon: Shield },
-            { href: '/settings/responsible-gaming', label: 'Responsible Gaming', icon: Clock },
+            { href: '/responsible-gaming', label: 'Responsible Gaming', icon: Clock },
             { href: '/support', label: 'Support', icon: User },
           ].map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href}>
@@ -76,7 +76,7 @@ export default function ProfilePage() {
 
       {/* Logout */}
       <PageSection>
-        <Button variant="destructive" className="w-full" onClick={logout}>
+        <Button variant="danger" className="w-full" onClick={logout}>
           <LogOut className="h-4 w-4 mr-2" />
           Log Out
         </Button>

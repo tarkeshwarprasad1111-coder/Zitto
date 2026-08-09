@@ -1,7 +1,6 @@
 import { Controller, Get, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Public } from '../common/decorators/public.decorator';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
 import { AnalyticsService } from './analytics.service';
 

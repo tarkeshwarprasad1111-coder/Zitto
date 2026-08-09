@@ -1,7 +1,26 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { ActorType, LedgerType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { LEDGER_SOURCE, SETTING_KEY } from '../common/constants';
+
+/** Default daily reward when the operator has not seeded `wallet.daily_reward`. */
+const DEFAULT_DAILY_REWARD = 100n;
+
+/**
+ * `AppSetting.value` is `Json`, so a coin amount may arrive as a number, a
+ * decimal string, or something an operator mistyped. Anything that is not a
+ * whole non-negative number falls back rather than throwing mid-claim.
+ */
+function coinSetting(value: Prisma.JsonValue | undefined, fallback: bigint): bigint {
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) {
+    return BigInt(value);
+  }
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    return BigInt(value.trim());
+  }
+  return fallback;
+}
 
 @Injectable()
 export class RewardsService {
@@ -26,9 +45,18 @@ export class RewardsService {
     const setting = await this.prisma.appSetting.findUnique({
       where: { key: SETTING_KEY.DAILY_REWARD },
     });
-    const amount = BigInt(setting?.value ?? '100');
+    const amount = coinSetting(setting?.value, DEFAULT_DAILY_REWARD);
 
-    return this.wallet.credit(userId, amount, LEDGER_SOURCE.DAILY_REWARD, null, idempotencyKey);
+    return this.wallet.credit({
+      userId,
+      amount,
+      type: LedgerType.DAILY_REWARD,
+      sourceType: LEDGER_SOURCE.DAILY_REWARD,
+      sourceId: null,
+      idempotencyKey,
+      actorType: ActorType.SYSTEM,
+      actorId: null,
+    });
   }
 
   async redeemPromo(userId: string, code: string, idempotencyKey: string) {
@@ -40,18 +68,34 @@ export class RewardsService {
       if (promo.startsAt && promo.startsAt > now) throw new ConflictException('Promo not yet active.');
       if (promo.expiresAt && promo.expiresAt < now) throw new ConflictException('Promo has expired.');
 
-      const redemptions = await tx.promoRedemption.count({ where: { promoId: promo.id } });
+      const redemptions = await tx.promoRedemption.count({ where: { promoCodeId: promo.id } });
       if (promo.maxRedemptions && redemptions >= promo.maxRedemptions)
         throw new ConflictException('Promo code exhausted.');
 
       const userRedemptions = await tx.promoRedemption.count({
-        where: { promoId: promo.id, userId },
+        where: { promoCodeId: promo.id, userId },
       });
       if (promo.perUserLimit && userRedemptions >= promo.perUserLimit)
         throw new ConflictException('You have already used this promo code.');
 
-      await tx.promoRedemption.create({ data: { promoId: promo.id, userId } });
-      return this.wallet.credit(userId, promo.rewardAmount, LEDGER_SOURCE.PROMO_CODE, promo.id, idempotencyKey);
+      await tx.promoRedemption.create({ data: { promoCodeId: promo.id, userId } });
+
+      // Enlist in this transaction: the redemption row and the coins must commit
+      // together, and a nested transaction would deadlock against it.
+      return this.wallet.credit(
+        {
+          userId,
+          amount: promo.rewardAmount,
+          type: LedgerType.PROMO,
+          sourceType: LEDGER_SOURCE.PROMO_CODE,
+          sourceId: promo.id,
+          idempotencyKey,
+          actorType: ActorType.SYSTEM,
+          actorId: null,
+          metadata: { code: promo.code },
+        },
+        tx,
+      );
     });
   }
 

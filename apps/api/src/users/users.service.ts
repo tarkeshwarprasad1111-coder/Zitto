@@ -57,7 +57,7 @@ export class UsersService {
         emailVerifiedAt: true,
         mobileVerifiedAt: true,
         createdAt: true,
-        userRoles: { select: { role: { select: { code: true } } } },
+        roles: { select: { role: { select: { code: true } } } },
       },
     });
 
@@ -77,7 +77,7 @@ export class UsersService {
       status: user.status,
       emailVerified: user.emailVerifiedAt !== null,
       mobileVerified: user.mobileVerifiedAt !== null,
-      roles: user.userRoles.map((assignment) => assignment.role.code),
+      roles: user.roles.map((assignment) => assignment.role.code),
       createdAt: user.createdAt.toISOString(),
     };
   }

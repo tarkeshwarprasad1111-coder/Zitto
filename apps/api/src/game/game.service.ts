@@ -1,11 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ActorType, GameMode, Prisma, RoundState } from '@prisma/client';
+import {
+  ActorType,
+  BetStatus,
+  GameMode,
+  LedgerType,
+  Prisma,
+  RoundState,
+} from '@prisma/client';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
 
 import { AuditService } from '../common/audit/audit.service';
 import { buildPage, type Page } from '../common/dto/pagination.dto';
-import { PAGINATION, SETTING_KEY } from '../common/constants';
+import { LEDGER_SOURCE, PAGINATION, SETTING_KEY } from '../common/constants';
 import type { RequestContextData } from '../common/decorators/request-context.decorator';
 import {
   ConflictDomainException,
@@ -17,12 +24,15 @@ import {
 import { AppConfigService } from '../config/app-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { WalletService } from '../wallet/wallet.service';
 import type {
   CreateRoomDto,
   GameConfigDto,
   GameHistoryDto,
   JoinRoomDto,
   ListRoomsDto,
+  PlaceBetDto,
+  PlaceBetResultDto,
   RoomDto,
   RoundDto,
 } from './dto/game.dto';
@@ -55,6 +65,8 @@ const VIRTUAL_CURRENCY_NOTICE =
  *
  * This service only *reads* rounds. `game_rounds` is append-only and written
  * exclusively by the game engine; the API never creates, mutates or settles one.
+ * Bets are the one exception in the other direction: `placeBet` appends to
+ * `bet_selections`, but still never touches the round or computes a payout.
  */
 @Injectable()
 export class GameService {
@@ -65,6 +77,7 @@ export class GameService {
     private readonly redis: RedisService,
     private readonly config: AppConfigService,
     private readonly audit: AuditService,
+    private readonly wallet: WalletService,
   ) {}
 
   // ───────────────────────────── Configuration ─────────────────────────────
@@ -84,7 +97,9 @@ export class GameService {
       this.prisma.featureFlag.findMany({ select: { key: true, enabled: true } }),
     ]);
 
-    const setting = new Map(settings.map((row) => [row.key, row.value]));
+    // `AppSetting.value` is `Json`; the readers below all work on text, so flatten
+    // once here rather than re-narrowing a `JsonValue` at every call site.
+    const setting = new Map(settings.map((row) => [row.key, settingToString(row.value)]));
 
     const featureFlags: Record<string, boolean> = { ...this.config.featureFlagDefaults };
     for (const flag of flags) {
@@ -224,10 +239,16 @@ export class GameService {
         })
       : null;
 
-    const inviteCode = await this.generateUniqueInviteCode();
+    // `code` is the room's permanent public identifier; `inviteCode` is the
+    // shareable secret. They are separate unique columns, so allocate both.
+    const [code, inviteCode] = await Promise.all([
+      this.generateUniqueCode('code'),
+      this.generateUniqueCode('inviteCode'),
+    ]);
 
     const room = await this.prisma.gameRoom.create({
       data: {
+        code,
         mode: dto.mode,
         hostUserId: userId,
         inviteCode,
@@ -410,6 +431,172 @@ export class GameService {
     return this.toRoundDto(round);
   }
 
+  // ───────────────────────────── Betting ─────────────────────────────
+
+  /**
+   * Stakes coins on one side of an open round.
+   *
+   * The stake debit and the bet row are written in a single transaction: a bet
+   * that failed to insert must not leave the player's coins gone, and coins that
+   * failed to move must not leave a bet that settlement would pay out.
+   *
+   * No payout is computed or written here. `payout` stays null until the game
+   * engine settles the round — the API must never be able to decide what a bet
+   * is worth.
+   */
+  async placeBet(
+    userId: string,
+    roundId: string,
+    dto: PlaceBetDto,
+    ctx: RequestContextData,
+  ): Promise<PlaceBetResultDto> {
+    const round = await this.prisma.gameRound.findUnique({
+      where: { id: roundId },
+      select: {
+        id: true,
+        roomId: true,
+        state: true,
+        bettingEndedAt: true,
+        // Room settings may narrow the platform stake range.
+        room: { select: { settingsJson: true } },
+      },
+    });
+
+    if (!round) {
+      throw new NotFoundDomainException('Round', roundId);
+    }
+
+    if (round.state !== RoundState.BETTING) {
+      throw new ConflictDomainException(
+        'Betting is closed for this round.',
+        'ROUND_NOT_ACCEPTING_BETS',
+      );
+    }
+
+    // The engine flips `state` on its own clock, so a round can still read as
+    // BETTING for a moment after its window has actually expired. Trust the
+    // timestamp too, otherwise that gap is a window to bet on a known outcome.
+    if (round.bettingEndedAt && round.bettingEndedAt.getTime() <= Date.now()) {
+      throw new ConflictDomainException(
+        'The betting window for this round has closed.',
+        'BETTING_WINDOW_CLOSED',
+      );
+    }
+
+    const bounds = await this.getStakeBounds(round.room.settingsJson);
+
+    if (dto.amount < bounds.min || dto.amount > bounds.max) {
+      throw new ValidationDomainException(
+        `Stakes in this room must be between ${bounds.min} and ${bounds.max} coins.`,
+        'STAKE_OUT_OF_RANGE',
+      );
+    }
+
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        // Insert first: the unique index is the replay guard, and rejecting a
+        // duplicate before the wallet lock keeps a retry storm off the hot row.
+        let bet;
+
+        try {
+          bet = await tx.betSelection.create({
+            data: {
+              roundId,
+              userId,
+              side: dto.side,
+              amount: dto.amount,
+              status: BetStatus.PLACED,
+              idempotencyKey: dto.idempotencyKey,
+            },
+            select: {
+              id: true,
+              roundId: true,
+              side: true,
+              amount: true,
+              status: true,
+              payout: true,
+              createdAt: true,
+            },
+          });
+        } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          ) {
+            throw new ConflictDomainException(
+              'A bet with this idempotency key already exists on this round.',
+              'BET_ALREADY_PLACED',
+            );
+          }
+          throw error;
+        }
+
+        const movement = await this.wallet.debit(
+          {
+            userId,
+            amount: dto.amount,
+            type: LedgerType.BET,
+            sourceType: LEDGER_SOURCE.ROUND,
+            sourceId: roundId,
+            // Namespaced: the ledger's key is globally unique, so a raw
+            // client-chosen key could collide across users or rounds.
+            idempotencyKey: `bet:${userId}:${roundId}:${dto.idempotencyKey}`,
+            actorType: ActorType.USER,
+            actorId: userId,
+            metadata: { betId: bet.id, side: dto.side },
+          },
+          tx,
+        );
+
+        const wallet = await tx.virtualWallet.findUniqueOrThrow({
+          where: { userId },
+          select: { balance: true, locked: true },
+        });
+
+        return { bet, movement, wallet };
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+        timeout: 15_000,
+      },
+    );
+
+    await this.audit.record({
+      actorType: ActorType.USER,
+      actorId: userId,
+      action: 'game.bet_placed',
+      targetType: 'bet_selection',
+      targetId: result.bet.id,
+      payload: {
+        roundId,
+        roomId: round.roomId,
+        side: dto.side,
+        amount: dto.amount.toString(),
+        ledgerId: result.movement.ledgerId,
+      },
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+      correlationId: ctx.correlationId,
+    });
+
+    return {
+      bet: {
+        id: result.bet.id,
+        roundId: result.bet.roundId,
+        side: result.bet.side,
+        amount: result.bet.amount.toString(),
+        status: result.bet.status,
+        payout: result.bet.payout?.toString() ?? null,
+        createdAt: result.bet.createdAt.toISOString(),
+      },
+      wallet: {
+        balance: result.wallet.balance.toString(),
+        available: (result.wallet.balance - result.wallet.locked).toString(),
+      },
+      replayed: result.movement.replayed,
+    };
+  }
+
   /** The caller's settled-round history, newest first, with their own bets attached. */
   async getHistory(
     userId: string,
@@ -491,8 +678,8 @@ export class GameService {
     await this.redis.expire(key, PRESENCE_TTL_SECONDS);
   }
 
-  /** Short, unambiguous invite code. Excludes characters that look alike. */
-  private async generateUniqueInviteCode(): Promise<string> {
+  /** Short, unambiguous room code. Excludes characters that look alike. */
+  private async generateUniqueCode(field: 'code' | 'inviteCode'): Promise<string> {
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -500,7 +687,7 @@ export class GameService {
       const code = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
 
       const clash = await this.prisma.gameRoom.findUnique({
-        where: { inviteCode: code },
+        where: field === 'code' ? { code } : { inviteCode: code },
         select: { id: true },
       });
 
@@ -510,8 +697,8 @@ export class GameService {
     }
 
     throw new ConflictDomainException(
-      'Could not allocate a unique invite code. Try again.',
-      'INVITE_CODE_ALLOCATION_FAILED',
+      'Could not allocate a unique room code. Try again.',
+      'ROOM_CODE_ALLOCATION_FAILED',
     );
   }
 
@@ -625,6 +812,17 @@ function readStringSetting(
   fallback: string,
 ): string {
   return settings.get(key) ?? fallback;
+}
+
+/**
+ * Renders a setting value as text. Objects keep their JSON form so structured
+ * settings such as `game.maintenance` survive the round trip.
+ */
+function settingToString(value: Prisma.JsonValue): string {
+  if (value === null) {
+    return '';
+  }
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
 function parseMaintenance(raw: string | undefined): { enabled: boolean; message: string | null } {

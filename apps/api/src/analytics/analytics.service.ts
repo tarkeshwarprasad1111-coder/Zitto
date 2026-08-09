@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Outcome } from '@prisma/client';
 import { ANALYTICS_DISCLAIMER, CONFIDENCE_THRESHOLD, REDIS_KEY } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,23 +16,48 @@ export interface AnalyticsMeta {
   disclaimer: string; // always populated
 }
 
-/** Banned prediction phrases — enforced in admin model notes and any generated text. */
+/**
+ * Claims the product may not make about its own analytics.
+ *
+ * Every entry is a multi-word phrase, and that is deliberate. Matching on bare
+ * words like "guaranteed" or "100%" rejects sentences that are true and worth
+ * saying — "100% of rounds are drawn independently", "guaranteed to be logged"
+ * — which trains authors to work around the check instead of heeding it. The
+ * phrases below only match text that actually misrepresents the model.
+ *
+ * MUST stay identical to `PROHIBITED_PHRASES` in `packages/contracts`, which
+ * the CI guardrail in `.github/workflows/ci.yml` greps for across the repo.
+ * The duplication is temporary: `@zitto/contracts` is ESM and this app compiles
+ * to CommonJS, so it cannot be imported here until the package emits a dual
+ * build. `assertNoBannedPhrases.spec.ts` fails if the two lists drift.
+ */
 export const BANNED_PREDICTION_PHRASES = [
-  'guaranteed',
+  'guaranteed win',
+  'guaranteed profit',
   'sure shot',
+  'sure prediction',
+  '100% accurate',
+  '100% win',
   'fixed result',
-  '100%',
-  'hack',
-  'recover your loss',
   'double your money',
+  'recover your loss',
 ] as const;
 
+/**
+ * Throws when text makes a claim the analytics cannot support.
+ *
+ * Called before persisting operator-authored model notes, so an admin sees the
+ * problem at the point of writing rather than a player seeing it in production.
+ */
 export function assertNoBannedPhrases(text: string): void {
-  const lower = text.toLowerCase();
-  for (const phrase of BANNED_PREDICTION_PHRASES) {
-    if (lower.includes(phrase)) {
-      throw new Error(`Analytics text contains banned phrase: "${phrase}"`);
-    }
+  const haystack = text.toLowerCase();
+  const found = BANNED_PREDICTION_PHRASES.find((phrase) => haystack.includes(phrase));
+
+  if (found) {
+    throw new BadRequestException(
+      `This text claims more than the analytics can support: "${found}". ` +
+        'Describe what the data shows, not what will happen.',
+    );
   }
 }
 
@@ -68,7 +93,7 @@ export class AnalyticsService {
   ) {}
 
   async getSummary(userId: string, window: number) {
-    const cacheKey = REDIS_KEY.analyticsSummary(window, userId);
+    const cacheKey = REDIS_KEY.analyticsUserSummary(window, userId);
     const cached = await this.redis.get(cacheKey);
     if (cached) return JSON.parse(cached) as ReturnType<typeof this._computeSummary>;
 
@@ -77,9 +102,13 @@ export class AnalyticsService {
     return result;
   }
 
-  private async _computeSummary(userId: string, window: number) {
+  private async _computeSummary(userId: string, window: number, roomId?: string) {
     const rounds = await this.prisma.betSelection.findMany({
-      where: { userId, status: { not: 'PLACED' } },
+      where: {
+        userId,
+        status: { not: 'PLACED' },
+        ...(roomId ? { round: { roomId } } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: window,
       select: { round: { select: { outcome: true } } },
@@ -148,7 +177,7 @@ export class AnalyticsService {
 
   async getCurrentPrediction(userId: string, roomId?: string) {
     const window = 50;
-    const summary = await this._computeSummary(userId, window);
+    const summary = await this._computeSummary(userId, window, roomId);
     const { meta, counts } = summary;
 
     if (meta.confidence === 'insufficient_data') {

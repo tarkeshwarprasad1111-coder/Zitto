@@ -1,77 +1,142 @@
 'use client';
 
 import { useState } from 'react';
-import { Gift, CheckCircle2, Trophy, Tag } from 'lucide-react';
+import { CheckCircle2, Gift, Tag, Trophy } from 'lucide-react';
+
 import { PageContainer, PageSection } from '@/components/layout/page-container';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
-import { mockMissions, mockDailyReward } from '@/lib/mock-data';
-import { formatCoins } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+// MOCK: replace with TanStack Query calls to /rewards/missions and /wallet.
+import { mockDailyReward, mockMissions } from '@/lib/mock-data';
+import { formatCoins, formatRelativeTime } from '@/lib/utils';
+import type { Mission } from '@/types';
+
+function MissionRow({ mission }: { mission: Mission }) {
+  const pct = Math.min(100, Math.round((mission.progress / mission.target) * 100));
+  const done = mission.status === 'completed';
+  const claimed = mission.status === 'claimed';
+
+  return (
+    <Card>
+      <CardContent className="py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-medium">{mission.title}</p>
+              {claimed && <Badge variant="outline">Claimed</Badge>}
+              {done && <Badge variant="success">Ready</Badge>}
+            </div>
+            <p className="mt-0.5 text-xs text-surface-muted">{mission.description}</p>
+          </div>
+
+          <div className="shrink-0 text-right">
+            <p className="text-sm font-bold tabular-nums text-gold-400">
+              +{formatCoins(mission.rewardAmount)}
+            </p>
+            {done && (
+              <Button size="sm" className="mt-1 h-6 text-xs">
+                Claim
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-2">
+          <div className="mb-1 flex justify-between text-xs tabular-nums text-surface-muted">
+            <span>
+              {mission.progress} / {mission.target}
+            </span>
+            <span>{pct}%</span>
+          </div>
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-surface-elevated"
+            role="progressbar"
+            aria-valuenow={mission.progress}
+            aria-valuemin={0}
+            aria-valuemax={mission.target}
+            aria-label={mission.title}
+          >
+            <div
+              className={`h-full rounded-full transition-all ${
+                claimed || done ? 'bg-emerald-500' : 'bg-gold-500'
+              }`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function RewardsPage() {
   const [promoCode, setPromoCode] = useState('');
-  const [claimingDaily, setClaimingDaily] = useState(false);
+  const [claiming, setClaiming] = useState(false);
 
-  const claimed = mockDailyReward.claimed;
+  const { claimable, amount, streakDay, nextClaimAt } = mockDailyReward;
 
   async function handleClaimDaily() {
-    setClaimingDaily(true);
-    // TODO: POST /rewards/daily-reward with Idempotency-Key
-    await new Promise((r) => setTimeout(r, 1000));
-    setClaimingDaily(false);
+    setClaiming(true);
+    // TODO: POST /rewards/daily-reward with an Idempotency-Key header.
+    await new Promise((r) => setTimeout(r, 800));
+    setClaiming(false);
   }
 
   return (
     <PageContainer className="flex flex-col gap-6">
       <PageSection>
-        <h1 className="font-display text-xl font-bold flex items-center gap-2">
+        <h1 className="flex items-center gap-2 font-display text-xl font-bold">
           <Gift className="h-5 w-5 text-gold-500" />
           Rewards
         </h1>
       </PageSection>
 
-      {/* Daily reward */}
       <PageSection>
         <Card className="border-gold-500/30 bg-gold-500/5">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="font-semibold">Daily Login Reward</p>
-                <p className="text-2xl font-display font-bold text-gold-400 mt-1">
-                  +{formatCoins(BigInt(mockDailyReward.amount))} coins
+                <p className="font-semibold">Daily login reward</p>
+                <p className="mt-1 font-display text-2xl font-bold tabular-nums text-gold-400">
+                  +{formatCoins(amount)}
                 </p>
-                {claimed && (
-                  <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Claimed today — come back tomorrow!
-                  </p>
-                )}
+                <p className="mt-1 text-xs text-surface-muted">
+                  {claimable ? (
+                    `Day ${streakDay} of your streak`
+                  ) : (
+                    <span className="flex items-center gap-1 text-emerald-400">
+                      <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+                      Claimed
+                      {nextClaimAt ? ` — next ${formatRelativeTime(nextClaimAt)}` : ''}
+                    </span>
+                  )}
+                </p>
               </div>
-              <Button
-                onClick={handleClaimDaily}
-                disabled={claimed || claimingDaily}
-                loading={claimingDaily}
-              >
-                {claimed ? 'Claimed' : 'Claim'}
+              <Button onClick={handleClaimDaily} disabled={!claimable} isLoading={claiming}>
+                {claimable ? 'Claim' : 'Claimed'}
               </Button>
             </div>
           </CardContent>
         </Card>
       </PageSection>
 
-      {/* Promo code */}
       <PageSection>
-        <h2 className="font-semibold mb-3 flex items-center gap-2">
-          <Tag className="h-4 w-4" />
-          Redeem Promo Code
+        <h2 className="mb-3 flex items-center gap-2 font-semibold">
+          <Tag className="h-4 w-4" aria-hidden="true" />
+          Redeem a promo code
         </h2>
         <div className="flex gap-2">
+          <label htmlFor="promo" className="sr-only">
+            Promo code
+          </label>
           <Input
-            placeholder="Enter code…"
+            id="promo"
+            placeholder="Enter code"
             value={promoCode}
+            autoCapitalize="characters"
             onChange={(e) => setPromoCode(e.target.value)}
             className="flex-1"
           />
@@ -79,53 +144,22 @@ export default function RewardsPage() {
         </div>
       </PageSection>
 
-      {/* Missions */}
       <PageSection>
-        <h2 className="font-semibold mb-3 flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-gold-400" />
-          Daily Missions
+        <h2 className="mb-3 flex items-center gap-2 font-semibold">
+          <Trophy className="h-4 w-4 text-gold-400" aria-hidden="true" />
+          Missions
         </h2>
         {mockMissions.length === 0 ? (
-          <EmptyState icon={<Trophy className="h-8 w-8" />} title="No missions today" description="Check back tomorrow." />
+          <EmptyState
+            icon={<Trophy className="h-8 w-8" />}
+            title="No missions right now"
+            description="New missions appear daily."
+          />
         ) : (
-          <div className="space-y-3">
-            {mockMissions.map((m) => {
-              const pct = Math.min(100, Math.round((m.progress / m.target) * 100));
-              const done = m.completedAt != null;
-              return (
-                <Card key={m.id}>
-                  <CardContent className="pt-4 pb-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium text-sm truncate">{m.name}</p>
-                          {done && <Badge variant="default" className="bg-emerald-600 text-xs">Done</Badge>}
-                        </div>
-                        <p className="text-xs text-surface-muted mt-0.5">{m.description}</p>
-                        <div className="mt-2">
-                          <div className="flex justify-between text-xs text-surface-muted mb-1">
-                            <span>{m.progress} / {m.target}</span>
-                            <span>{pct}%</span>
-                          </div>
-                          <div className="h-1.5 bg-surface-border rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gold-500 rounded-full transition-all"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-gold-400">+{formatCoins(BigInt(m.rewardAmount))}</p>
-                        {done && !m.claimedAt && (
-                          <Button size="sm" className="mt-1 text-xs h-6">Claim</Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="flex flex-col gap-3">
+            {mockMissions.map((m) => (
+              <MissionRow key={m.id} mission={m} />
+            ))}
           </div>
         )}
       </PageSection>

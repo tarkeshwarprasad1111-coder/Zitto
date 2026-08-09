@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GameMode, Outcome, RoundState } from '@prisma/client';
+import { GameMode, Outcome, RoomStatus, RoundState } from '@prisma/client';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
@@ -25,7 +25,7 @@ const coinAmountSchema = z
 
 export const listRoomsSchema = z.object({
   mode: z.nativeEnum(GameMode).optional(),
-  status: z.string().trim().max(32).optional(),
+  status: z.nativeEnum(RoomStatus).optional(),
   cursor: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(PAGINATION.MAX_LIMIT).default(PAGINATION.DEFAULT_LIMIT),
 });
