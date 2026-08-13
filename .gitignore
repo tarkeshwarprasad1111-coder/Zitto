@@ -25,3 +25,4 @@ prisma/*.db-journal
 .preview2/
 .preview3/
 .preview4/
+.preview5/

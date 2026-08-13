@@ -38,13 +38,30 @@
 
   body {
     @apply bg-surface-bg text-surface-fg font-sans antialiased;
-    /* Ambient dragon/tiger glow behind the whole app */
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+
+  /*
+   * Ambient dragon/tiger glow behind the whole app.
+   *
+   * This used to be `background-attachment: fixed` on the body. Android
+   * WebView repaints such a layer against the window rather than the layout
+   * viewport, and when the two differ it smears — text ghosts a second copy of
+   * itself a few pixels sideways, which is what showed up in the packaged app.
+   *
+   * A real fixed layer behind the content gives the same look and repaints
+   * correctly. `pointer-events: none` keeps it from swallowing taps.
+   */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
       radial-gradient(60rem 30rem at 12% -8%, rgba(220, 38, 38, 0.1), transparent 62%),
       radial-gradient(55rem 28rem at 92% 4%, rgba(37, 99, 235, 0.1), transparent 60%);
-    background-attachment: fixed;
-    min-height: 100dvh;
-    overscroll-behavior-y: none;
   }
 
   /*
