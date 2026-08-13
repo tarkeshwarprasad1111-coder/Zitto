@@ -22,3 +22,4 @@ coverage
 prisma/*.db
 prisma/*.db-journal
 .preview/
+.preview2/

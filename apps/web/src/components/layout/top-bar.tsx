@@ -44,7 +44,7 @@ export function TopBar({ balance, unreadNotifications = 0, className }: TopBarPr
 
         <div className="flex items-center gap-1.5">
           <Link
-            href="/profile/wallet"
+            href="/wallet"
             className="flex min-h-9 items-center gap-1.5 rounded-full border border-gold-500/30 bg-gold-500/10 px-3 py-1.5 transition-colors hover:bg-gold-500/18 focus-visible:ring-2 focus-visible:ring-gold-400"
           >
             <Coins size={15} aria-hidden="true" className="text-gold-400" />
