@@ -7,9 +7,19 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:mobile": "cross-env MOBILE=1 next build",
+    "android:add": "cap add android",
+    "android:icons": "capacitor-assets generate --android",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "apk": "pnpm build:mobile && pnpm android:sync && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^5.7.0",
+    "@capacitor/core": "^5.7.0",
+    "@capacitor/splash-screen": "^5.0.7",
+    "@capacitor/status-bar": "^5.0.7",
     "@hookform/resolvers": "^3.3.4",
     "@tanstack/react-query": "^5.20.5",
     "clsx": "^2.1.0",
@@ -27,8 +37,11 @@
     "zustand": "^4.5.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^5.7.0",
     "@tanstack/react-query-devtools": "^5.20.5",
     "@types/node": "^20.11.5",
+    "cross-env": "^7.0.3",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "autoprefixer": "^10.4.17",

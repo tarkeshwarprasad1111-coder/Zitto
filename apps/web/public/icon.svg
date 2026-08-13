@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Zitto">
+  <!-- Ground matches --surface-bg so the icon sits flush on the splash screen. -->
+  <rect width="512" height="512" rx="112" fill="#0A0A0F"/>
+
+  <!-- The two sides of a round, split on the diagonal: dragon red, tiger blue. -->
+  <path d="M96 150 h150 v212 h-150 z" fill="#DC2626"/>
+  <path d="M266 150 h150 v212 h-150 z" fill="#2563EB"/>
+
+  <!-- Gold seam down the middle — the tie, and the app's accent. -->
+  <rect x="248" y="138" width="16" height="236" rx="8" fill="#F59E0B"/>
+
+  <!-- Card pips, so the mark reads as cards rather than two blocks. -->
+  <circle cx="171" cy="204" r="20" fill="#0A0A0F" opacity="0.55"/>
+  <circle cx="171" cy="308" r="20" fill="#0A0A0F" opacity="0.55"/>
+  <circle cx="341" cy="204" r="20" fill="#0A0A0F" opacity="0.55"/>
+  <circle cx="341" cy="308" r="20" fill="#0A0A0F" opacity="0.55"/>
+</svg>

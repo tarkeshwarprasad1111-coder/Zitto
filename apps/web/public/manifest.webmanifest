@@ -1,0 +1,34 @@
+{
+  "name": "Zitto — Dragon Tiger",
+  "short_name": "Zitto",
+  "description": "Dragon Tiger played with virtual coins, with analytics that are honest about what statistics can and cannot tell you.",
+  "start_url": "/home/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0A0A0F",
+  "categories": ["games", "entertainment"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Play",
+      "url": "/game/",
+      "description": "Pick a table and play a round"
+    },
+    {
+      "name": "Analytics",
+      "url": "/analytics/",
+      "description": "Statistics from rounds you have played"
+    }
+  ]
+}

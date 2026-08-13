@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" role="img" aria-label="Zitto">
+  <!-- Splash is 2732x2732 so Capacitor can crop it to any device aspect ratio
+       without the mark drifting off-centre. Ground matches --surface-bg. -->
+  <rect width="2732" height="2732" fill="#0A0A0F"/>
+
+  <g transform="translate(1110, 1110) scale(1)">
+    <path d="M96 150 h150 v212 h-150 z" fill="#DC2626"/>
+    <path d="M266 150 h150 v212 h-150 z" fill="#2563EB"/>
+    <rect x="248" y="138" width="16" height="236" rx="8" fill="#F59E0B"/>
+    <circle cx="171" cy="204" r="20" fill="#0A0A0F" opacity="0.55"/>
+    <circle cx="171" cy="308" r="20" fill="#0A0A0F" opacity="0.55"/>
+    <circle cx="341" cy="204" r="20" fill="#0A0A0F" opacity="0.55"/>
+    <circle cx="341" cy="308" r="20" fill="#0A0A0F" opacity="0.55"/>
+  </g>
+</svg>

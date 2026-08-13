@@ -22,8 +22,15 @@ function isLocale(value: string | undefined | null): value is Locale {
  * There is no `[locale]` route segment — the app is a single URL space and
  * the player's language is a preference, so it is read from a cookie first
  * and falls back to the browser's `Accept-Language`.
+ *
+ * The static export used for the Android build has no request to read from:
+ * `cookies()` and `headers()` throw outright under `output: 'export'`. There
+ * it settles on the default and the in-app language switcher takes over on the
+ * client, which is the only thing that could work in a packaged app anyway.
  */
 export function resolveLocale(): Locale {
+  if (process.env.MOBILE === '1') return DEFAULT_LOCALE;
+
   const cookieLocale = cookies().get(LOCALE_COOKIE)?.value;
   if (isLocale(cookieLocale)) return cookieLocale;
 

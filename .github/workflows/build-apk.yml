@@ -1,0 +1,93 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+# The Android project is generated rather than committed: `cap add android`
+# scaffolds it from capacitor.config.ts on every run, so there is no large
+# generated tree in git and no chance of it drifting from the config.
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8.15.0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build static export
+        working-directory: apps/web
+        run: pnpm build:mobile 2>&1 | tee ../../next-build.log
+
+      - name: Scaffold Android project
+        working-directory: apps/web
+        run: pnpm exec cap add android 2>&1 | tee -a ../../next-build.log
+
+      - name: Generate launcher icons and splash
+        working-directory: apps/web
+        # Non-fatal: a missing icon is a cosmetic problem, and failing here
+        # would hide whatever the APK build itself has to say.
+        run: pnpm exec capacitor-assets generate --android 2>&1 | tee -a ../../next-build.log || true
+
+      - name: Sync web assets into the Android project
+        working-directory: apps/web
+        run: pnpm exec cap sync android 2>&1 | tee -a ../../next-build.log
+
+      - name: Assemble debug APK
+        id: assemble
+        working-directory: apps/web/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace 2>&1 | tee -a ../../../gradle.log
+        continue-on-error: true
+
+      # Always published, pass or fail. Reading a build log beats guessing at
+      # an exit code, which is exactly how the last Android build stalled.
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            next-build.log
+            gradle.log
+          if-no-files-found: warn
+
+      - name: Upload APK
+        if: steps.assemble.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zitto-APK
+          path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Fail if the APK did not build
+        if: steps.assemble.outcome == 'failure'
+        run: |
+          echo "::error::Gradle failed. Download the build-logs artifact for the reason."
+          exit 1

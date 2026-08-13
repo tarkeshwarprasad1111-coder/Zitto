@@ -2,6 +2,13 @@ node_modules
 .next
 dist
 build
+
+# Next static export, and the Android project Capacitor scaffolds from
+# capacitor.config.ts. Both are generated on every build — committing them
+# invites drift between the config and the tree it produced.
+out
+apps/web/android
+apps/web/ios
 .turbo
 coverage
 *.log

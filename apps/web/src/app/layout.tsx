@@ -27,6 +27,15 @@ export const metadata: Metadata = {
   description:
     'Play Dragon Tiger with virtual coins and see the statistics behind every round — sample sizes, rolling windows and methods, always shown.',
   applicationName: 'Zitto',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Zitto',
+    statusBarStyle: 'black-translucent',
+  },
   robots: { index: true, follow: true },
   openGraph: {
     title: 'Zitto — Dragon Tiger analytics',
