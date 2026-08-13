@@ -27,9 +27,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          # No `cache: pnpm` until a lockfile is committed. setup-node builds
+          # its cache key by hashing pnpm-lock.yaml, and with no lockfile the
+          # step fails outright — which is what took down lint, test and the
+          # security scan together.
 
-      - run: pnpm install --frozen-lockfile
+      # --no-frozen-lockfile until pnpm-lock.yaml is committed; the strict
+      # flag refuses to run at all when the lockfile is absent.
+      - run: pnpm install --no-frozen-lockfile
 
       - name: Generate Prisma client
         run: pnpm --filter @zitto/api prisma:generate
@@ -51,9 +56,15 @@ jobs:
       - name: Scan for prohibited claims
         run: |
           BANNED='guaranteed win|sure shot|100% accurate|100% win|fixed result|sure prediction|double your money|recover your loss|guaranteed profit'
+          # The two files that declare the ban, and the tests that exercise
+          # it, necessarily contain every phrase. Without these exclusions the
+          # check can never pass — and a permanently red guardrail is worse
+          # than none, because people stop reading it.
           if grep -rEin "$BANNED" \
               --include='*.ts' --include='*.tsx' --include='*.json' \
               --include='*.md' --include='*.html' \
+              --exclude='prohibited-phrases.ts' --exclude='disclaimers.ts' \
+              --exclude='*.spec.ts' --exclude='*.test.ts' \
               apps packages 2>/dev/null; then
             echo "::error::Prohibited prediction language found. See matches above."
             exit 1
@@ -103,9 +114,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          # No `cache: pnpm` until a lockfile is committed. setup-node builds
+          # its cache key by hashing pnpm-lock.yaml, and with no lockfile the
+          # step fails outright — which is what took down lint, test and the
+          # security scan together.
 
-      - run: pnpm install --frozen-lockfile
+      # --no-frozen-lockfile until pnpm-lock.yaml is committed; the strict
+      # flag refuses to run at all when the lockfile is absent.
+      - run: pnpm install --no-frozen-lockfile
 
       - name: Run migrations
         run: pnpm --filter @zitto/api exec prisma migrate deploy
@@ -127,9 +143,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          # No `cache: pnpm` until a lockfile is committed. setup-node builds
+          # its cache key by hashing pnpm-lock.yaml, and with no lockfile the
+          # step fails outright — which is what took down lint, test and the
+          # security scan together.
 
-      - run: pnpm install --frozen-lockfile
+      # --no-frozen-lockfile until pnpm-lock.yaml is committed; the strict
+      # flag refuses to run at all when the lockfile is absent.
+      - run: pnpm install --no-frozen-lockfile
 
       - name: Generate Prisma client
         run: pnpm --filter @zitto/api prisma:generate
@@ -150,9 +171,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          # No `cache: pnpm` until a lockfile is committed. setup-node builds
+          # its cache key by hashing pnpm-lock.yaml, and with no lockfile the
+          # step fails outright — which is what took down lint, test and the
+          # security scan together.
 
-      - run: pnpm install --frozen-lockfile
+      # --no-frozen-lockfile until pnpm-lock.yaml is committed; the strict
+      # flag refuses to run at all when the lockfile is absent.
+      - run: pnpm install --no-frozen-lockfile
 
       - name: Audit dependencies
         run: pnpm audit --audit-level high
