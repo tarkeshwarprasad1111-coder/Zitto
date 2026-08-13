@@ -87,6 +87,38 @@ jobs:
 
           echo "Stylesheet compiled: ${SIZE} bytes."
 
+      # Three separate dead links have shipped so far — /profile/wallet,
+      # /notifications and /tournaments/:id — each a 404 reachable from the
+      # main navigation. A link to a route the export never emitted is a
+      # build error, not something to find by hand on a phone.
+      - name: Check every internal link resolves
+        working-directory: apps/web
+        shell: bash
+        run: |
+          MISSING=0
+
+          # Literal hrefs only. Template-literal links carry runtime values
+          # and cannot be resolved here; their parent routes still get checked.
+          LINKS=$(grep -rhoE 'href="/[a-zA-Z0-9/_-]*"' src --include='*.tsx' \
+                  | sed 's|href="||; s|"||' | sort -u)
+
+          for link in $LINKS; do
+            [ "$link" = "/" ] && continue
+            path="out${link%/}"
+            if [ ! -f "${path}/index.html" ] && [ ! -f "${path}.html" ]; then
+              echo "::error::$link is linked but was never exported."
+              MISSING=1
+            fi
+          done
+
+          if [ "$MISSING" -eq 1 ]; then
+            echo "Exported routes:"
+            find out -name index.html | sed 's|^out||; s|/index.html||' | sort
+            exit 1
+          fi
+
+          echo "All internal links resolve."
+
       - name: Scaffold Android project
         working-directory: apps/web
         shell: bash
