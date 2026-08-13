@@ -1,7 +1,9 @@
 'use client';
 
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
+import type { PlayedRound } from '@/lib/analytics';
 import type {
   BetSide,
   Coins,
@@ -42,6 +44,23 @@ interface GameState {
   isResultVisible: boolean;
   isConnected: boolean;
 
+  /**
+   * Spendable coins.
+   *
+   * Held here rather than in the game screen so it survives navigation, and
+   * persisted so it survives closing the app. This is a local stand-in only:
+   * once the wallet API is wired up the server is the authority and this
+   * becomes a cached snapshot.
+   */
+  balance: Coins;
+
+  /**
+   * Rounds this device has settled, newest first — the data the analytics
+   * screen reads. Kept separate from `history` because analytics needs the
+   * stake and payout too, not just which side won.
+   */
+  playedRounds: PlayedRound[];
+
   /* actions */
   setRoom: (roomId: string | null) => void;
   setRound: (round: GameRound | null) => void;
@@ -59,11 +78,35 @@ interface GameState {
   pushOutcome: (outcome: Outcome) => void;
   setConnected: (value: boolean) => void;
   resetForNextRound: () => void;
+
+  /** Applies a signed delta. Balance is clamped at zero — it cannot go negative. */
+  adjustBalance: (delta: Coins) => void;
+  /** Wipes local play data. Offered on the responsible-gaming screen. */
+  resetPlayData: () => void;
 }
 
 const MAX_HISTORY = 100;
 
-export const useGameStore = create<GameState>()((set, get) => ({
+/** Starting coins on a fresh install. Matches the signup bonus in the API. */
+const STARTING_BALANCE: Coins = 5_000;
+
+/**
+ * Stand-in storage for server prerender, where `localStorage` does not exist.
+ * Without it zustand's persist middleware throws during the static export and
+ * leaves the store's `persist` API undefined.
+ */
+const serverStorage: Storage = {
+  length: 0,
+  clear: () => undefined,
+  getItem: () => null,
+  key: () => null,
+  removeItem: () => undefined,
+  setItem: () => undefined,
+};
+
+export const useGameStore = create<GameState>()(
+  persist(
+    (set, get) => ({
   roomId: null,
   currentRound: null,
   phase: 'WAITING',
@@ -80,6 +123,9 @@ export const useGameStore = create<GameState>()((set, get) => ({
   lastResult: null,
   isResultVisible: false,
   isConnected: false,
+
+  balance: STARTING_BALANCE,
+  playedRounds: [],
 
   setRoom: (roomId) =>
     set({
@@ -137,12 +183,26 @@ export const useGameStore = create<GameState>()((set, get) => ({
     }),
 
   settleRound: (result) =>
-    set((state) => ({
-      lastResult: result,
-      isResultVisible: true,
-      phase: 'SETTLED',
-      history: [result.outcome, ...state.history].slice(0, MAX_HISTORY),
-    })),
+    set((state) => {
+      // Recorded whether or not the player staked. A round they sat out still
+      // happened, and dropping it would bias the frequencies the analytics
+      // screen reports.
+      const played: PlayedRound = {
+        outcome: result.outcome,
+        settledAt: result.settledAt,
+        side: result.yourSelection?.side ?? null,
+        amount: result.yourSelection?.amount ?? 0,
+        payout: result.yourSelection?.payout ?? 0,
+      };
+
+      return {
+        lastResult: result,
+        isResultVisible: true,
+        phase: 'SETTLED',
+        history: [result.outcome, ...state.history].slice(0, MAX_HISTORY),
+        playedRounds: [played, ...state.playedRounds].slice(0, MAX_HISTORY),
+      };
+    }),
 
   dismissResult: () => set({ isResultVisible: false }),
 
@@ -163,7 +223,29 @@ export const useGameStore = create<GameState>()((set, get) => ({
       countdown: 0,
       remainingMs: 0,
     }),
-}));
+
+  adjustBalance: (delta) =>
+    set((state) => ({ balance: Math.max(0, Math.trunc(state.balance + delta)) })),
+
+  resetPlayData: () =>
+    set({ balance: STARTING_BALANCE, playedRounds: [], history: [], lastResult: null }),
+    }),
+    {
+      name: 'zitto.game',
+      storage: createJSONStorage(() =>
+        typeof window === 'undefined' ? serverStorage : localStorage,
+      ),
+      // Only the durable facts. Round phase, countdown and the in-flight
+      // selection describe a moment that has passed by the time the app
+      // reopens — restoring them would show a live round that does not exist.
+      partialize: (state) => ({
+        balance: state.balance,
+        playedRounds: state.playedRounds,
+        history: state.history,
+      }),
+    },
+  ),
+);
 
 /* ------------------------------------------------------------------ */
 /* Selectors                                                           */

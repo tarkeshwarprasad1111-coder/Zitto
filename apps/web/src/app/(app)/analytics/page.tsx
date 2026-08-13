@@ -9,10 +9,16 @@ import { StatCard } from '@/components/analytics/stat-card';
 import { StreakIndicator } from '@/components/analytics/streak-indicator';
 import { PageContainer, PageSection } from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
-// MOCK: replace both builders with TanStack Query calls to
-// /analytics/summary?window= and /analytics/prediction/current.
-import { buildAnalyticsSummary, buildPrediction } from '@/lib/mock-data';
-import { formatPercent } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
+import {
+  MIN_SAMPLE,
+  predictFromPlayedRounds,
+  roundsStaked,
+  sessionNet,
+  summarisePlayedRounds,
+} from '@/lib/analytics';
+import { formatCoins, formatPercent } from '@/lib/utils';
+import { useGameStore } from '@/store/game-store';
 import type { AnalyticsWindow } from '@/types';
 
 const WINDOWS: readonly AnalyticsWindow[] = [10, 25, 50, 100];
@@ -29,9 +35,58 @@ const WINDOWS: readonly AnalyticsWindow[] = [10, 25, 50, 100];
 export default function AnalyticsPage() {
   const [window, setWindow] = useState<AnalyticsWindow>(50);
 
-  // Recomputed per window so the selector actually changes the numbers.
-  const summary = useMemo(() => buildAnalyticsSummary(window), [window]);
-  const prediction = useMemo(() => buildPrediction(window), [window]);
+  // Real rounds this device has settled, not fixtures. Play changes these.
+  const playedRounds = useGameStore((state) => state.playedRounds);
+
+  const summary = useMemo(
+    () => summarisePlayedRounds(playedRounds, window),
+    [playedRounds, window],
+  );
+  const prediction = useMemo(
+    () => predictFromPlayedRounds(playedRounds, window),
+    [playedRounds, window],
+  );
+  const net = useMemo(() => sessionNet(playedRounds, window), [playedRounds, window]);
+  const staked = useMemo(() => roundsStaked(playedRounds, window), [playedRounds, window]);
+
+  /*
+   * Below the minimum sample the page shows nothing but an explanation.
+   * Rendering cards full of zeroes would read as "Dragon has never won",
+   * which is a claim about the game rather than about the missing data.
+   */
+  if (summary.sampleSize < MIN_SAMPLE) {
+    return (
+      <PageContainer className="flex flex-col gap-6">
+        <PageSection>
+          <h1 className="flex items-center gap-2 font-display text-xl font-bold">
+            <BarChart3 className="h-5 w-5 text-gold-500" />
+            Analytics
+          </h1>
+        </PageSection>
+
+        <PageSection>
+          <EmptyState
+            icon={<BarChart3 className="h-8 w-8" />}
+            title="Not enough rounds yet"
+            description={
+              summary.sampleSize === 0
+                ? `Play a few rounds and your statistics appear here. At least ${MIN_SAMPLE} are needed before any figure is worth showing.`
+                : `${summary.sampleSize} of ${MIN_SAMPLE} rounds recorded. Keep playing and this fills in.`
+            }
+          />
+        </PageSection>
+
+        <PageSection>
+          <div className="rounded-lg border border-surface-border bg-surface-card/50 p-4 text-sm text-surface-muted">
+            <p>
+              Figures here describe rounds you have already played. Dragon Tiger draws are
+              independent, so nothing on this page can tell you what comes next.
+            </p>
+          </div>
+        </PageSection>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer className="flex flex-col gap-6">
@@ -88,6 +143,15 @@ export default function AnalyticsPage() {
           sampleSize={summary.sampleSize}
           window={window}
           method={summary.method}
+          lastUpdated={summary.lastUpdated}
+        />
+
+        <StatCard
+          value={`${net >= 0 ? '+' : '−'}${formatCoins(Math.abs(net))}`}
+          label="Net coins over these rounds"
+          sampleSize={staked}
+          window={window}
+          method={`Stake subtracted from payout across the ${staked} of ${summary.sampleSize} rounds you backed a side on. Rounds you sat out are excluded.`}
           lastUpdated={summary.lastUpdated}
         />
 

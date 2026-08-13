@@ -7,16 +7,58 @@ import { PageContainer, PageSection } from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-// MOCK: replace with TanStack Query calls to /wallet and /wallet/ledger.
-import { mockLedger, mockWallet } from '@/lib/mock-data';
+import type { PlayedRound } from '@/lib/analytics';
 import { formatCoins, formatRelativeTime } from '@/lib/utils';
-import type { LedgerEntry } from '@/types';
+import { useGameStore } from '@/store/game-store';
 
 const FILTERS = ['all', 'credits', 'debits'] as const;
 type Filter = (typeof FILTERS)[number];
 
-function LedgerRow({ entry }: { entry: LedgerEntry }) {
-  const isCredit = entry.amount > 0;
+interface Movement {
+  id: string;
+  label: string;
+  /** Signed: positive credits the balance, negative debits it. */
+  amount: number;
+  at: string;
+}
+
+/**
+ * Turns played rounds into the movements they caused.
+ *
+ * A round produces up to two entries — the stake leaving and, if it won, the
+ * return arriving. Showing them separately is what makes the running total
+ * legible; a single net figure per round hides the size of the bet.
+ */
+function movementsFrom(rounds: readonly PlayedRound[]): Movement[] {
+  const out: Movement[] = [];
+
+  rounds.forEach((round, index) => {
+    if (round.side === null || round.amount === 0) return;
+
+    const side = `${round.side.charAt(0)}${round.side.slice(1).toLowerCase()}`;
+
+    if (round.payout > 0) {
+      out.push({
+        id: `${index}-win`,
+        label: `Won on ${side}`,
+        amount: round.payout,
+        at: round.settledAt,
+      });
+    }
+
+    out.push({
+      id: `${index}-bet`,
+      label: `Stake on ${side}`,
+      amount: -round.amount,
+      at: round.settledAt,
+    });
+  });
+
+  return out;
+}
+
+function MovementRow({ movement }: { movement: Movement }) {
+  const isCredit = movement.amount > 0;
 
   return (
     <li className="flex items-center gap-3 border-b border-surface-border py-3 last:border-0">
@@ -32,23 +74,18 @@ function LedgerRow({ entry }: { entry: LedgerEntry }) {
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{entry.description}</p>
-        <p className="text-xs text-surface-muted">{formatRelativeTime(entry.createdAt)}</p>
+        <p className="truncate text-sm font-medium">{movement.label}</p>
+        <p className="text-xs text-surface-muted">{formatRelativeTime(movement.at)}</p>
       </div>
 
-      <div className="text-right">
-        <p
-          className={`text-sm font-semibold tabular-nums ${
-            isCredit ? 'text-emerald-400' : 'text-dragon-400'
-          }`}
-        >
-          {isCredit ? '+' : '−'}
-          {formatCoins(Math.abs(entry.amount))}
-        </p>
-        {/* Running balance sits under every row: the ledger is the source of
-            truth and the headline balance is derived from it, not the reverse. */}
-        <p className="text-xs tabular-nums text-surface-muted">{formatCoins(entry.balanceAfter)}</p>
-      </div>
+      <p
+        className={`text-sm font-semibold tabular-nums ${
+          isCredit ? 'text-emerald-400' : 'text-dragon-400'
+        }`}
+      >
+        {isCredit ? '+' : '−'}
+        {formatCoins(Math.abs(movement.amount))}
+      </p>
     </li>
   );
 }
@@ -56,14 +93,28 @@ function LedgerRow({ entry }: { entry: LedgerEntry }) {
 export default function WalletPage() {
   const [filter, setFilter] = useState<Filter>('all');
 
-  const entries = useMemo(
+  const balance = useGameStore((state) => state.balance);
+  const playedRounds = useGameStore((state) => state.playedRounds);
+
+  const movements = useMemo(() => movementsFrom(playedRounds), [playedRounds]);
+
+  const staked = useMemo(
+    () => playedRounds.reduce((total, r) => total + r.amount, 0),
+    [playedRounds],
+  );
+  const returned = useMemo(
+    () => playedRounds.reduce((total, r) => total + r.payout, 0),
+    [playedRounds],
+  );
+
+  const shown = useMemo(
     () =>
-      mockLedger.filter((e) => {
-        if (filter === 'credits') return e.amount > 0;
-        if (filter === 'debits') return e.amount < 0;
+      movements.filter((m) => {
+        if (filter === 'credits') return m.amount > 0;
+        if (filter === 'debits') return m.amount < 0;
         return true;
       }),
-    [filter],
+    [movements, filter],
   );
 
   return (
@@ -82,7 +133,7 @@ export default function WalletPage() {
         <Card>
           <CardContent className="py-5 text-center">
             <p className="font-display text-4xl font-bold tabular-nums text-gold-400">
-              {formatCoins(mockWallet.balance)}
+              {formatCoins(balance)}
             </p>
             <p className="mt-1 text-sm text-surface-muted">Available balance</p>
           </CardContent>
@@ -91,14 +142,14 @@ export default function WalletPage() {
         <div className="grid grid-cols-2 gap-3">
           <Card>
             <CardContent className="py-3 text-center">
-              <p className="text-xl font-bold tabular-nums">{formatCoins(mockWallet.bonus)}</p>
-              <p className="text-xs text-surface-muted">Bonus coins</p>
+              <p className="text-xl font-bold tabular-nums">{formatCoins(staked)}</p>
+              <p className="text-xs text-surface-muted">Total staked</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="py-3 text-center">
-              <p className="text-xl font-bold tabular-nums">{formatCoins(mockWallet.locked)}</p>
-              <p className="text-xs text-surface-muted">Locked in play</p>
+              <p className="text-xl font-bold tabular-nums">{formatCoins(returned)}</p>
+              <p className="text-xs text-surface-muted">Total returned</p>
             </CardContent>
           </Card>
         </div>
@@ -123,13 +174,13 @@ export default function WalletPage() {
           </div>
         </div>
 
-        {entries.length === 0 ? (
+        {shown.length === 0 ? (
           <EmptyState
             icon={<Clock className="h-8 w-8" />}
             title={filter === 'all' ? 'No transactions yet' : `No ${filter} to show`}
             description={
               filter === 'all'
-                ? 'Your coin activity will appear here once you play a round.'
+                ? 'Back a side on a round and the stake and any return appear here.'
                 : 'Try a different filter.'
             }
           />
@@ -137,8 +188,8 @@ export default function WalletPage() {
           <Card>
             <CardContent className="py-2">
               <ul>
-                {entries.map((entry) => (
-                  <LedgerRow key={entry.id} entry={entry} />
+                {shown.map((movement) => (
+                  <MovementRow key={movement.id} movement={movement} />
                 ))}
               </ul>
             </CardContent>

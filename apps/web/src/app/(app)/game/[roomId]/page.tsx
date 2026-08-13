@@ -14,7 +14,7 @@ import { PageContainer } from '@/components/layout/page-container';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
-import { mockOutcomeHistory, mockRooms, mockWallet } from '@/lib/mock-data';
+import { mockOutcomeHistory, mockRooms } from '@/lib/mock-data';
 import { cn, formatCoins, resolveOutcome } from '@/lib/utils';
 import { selectCanBet, useGameStore } from '@/store/game-store';
 import {
@@ -110,7 +110,11 @@ export default function GameRoomPage() {
   const [dragonCard, setDragonCard] = useState<PlayingCardData | null>(null);
   const [tigerCard, setTigerCard] = useState<PlayingCardData | null>(null);
   const [cardsRevealed, setCardsRevealed] = useState(false);
-  const [balance, setBalance] = useState<Coins>(mockWallet.balance);
+
+  // Balance lives in the store so it survives leaving the table and closing
+  // the app, and so the wallet screen sees the same figure.
+  const balance = useGameStore((state) => state.balance);
+  const adjustBalance = useGameStore((state) => state.adjustBalance);
 
   // Read live values without making the round loop depend on them — the loop
   // owns its own scheduling and must not restart when state changes.
@@ -123,7 +127,14 @@ export default function GameRoomPage() {
   /* Join the room */
   useEffect(() => {
     setRoom(roomId);
-    setHistory(mockOutcomeHistory);
+
+    // Seed the rail only on a first visit. The player's own outcomes are
+    // persisted, and overwriting them here would wipe their history every time
+    // they walked back into a room.
+    if (useGameStore.getState().history.length === 0) {
+      setHistory(mockOutcomeHistory);
+    }
+
     setConnected(true);
     return () => {
       setRoom(null);
@@ -215,7 +226,7 @@ export default function GameRoomPage() {
                   },
                 };
 
-                if (payout > 0) setBalance((current) => current + payout);
+                if (payout > 0) adjustBalance(payout);
               }
 
               settleRound(summary);
@@ -259,7 +270,7 @@ export default function GameRoomPage() {
       await new Promise((resolve) => setTimeout(resolve, 350));
 
       confirmSelection(selectedSide, betAmount);
-      setBalance((current) => current - betAmount);
+      adjustBalance(-betAmount);
       toast({
         title: 'Selection confirmed',
         description: `${formatCoins(betAmount)} on ${selectedSide.charAt(0)}${selectedSide.slice(1).toLowerCase()}`,

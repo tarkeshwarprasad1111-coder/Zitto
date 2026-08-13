@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { ShieldCheck, Clock, AlertCircle, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Clock, AlertCircle, ExternalLink, RotateCcw } from 'lucide-react';
 import { PageContainer, PageSection } from '@/components/layout/page-container';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
+import { useGameStore } from '@/store/game-store';
 
 const HELPLINES = [
   { name: 'iCall (India)', phone: '9152987821' },
@@ -27,6 +28,9 @@ export default function ResponsibleGamingPage() {
   const [showExclusionModal, setShowExclusionModal] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [confirmText, setConfirmText] = useState('');
+
+  const roundsRecorded = useGameStore((state) => state.playedRounds.length);
+  const resetPlayData = useGameStore((state) => state.resetPlayData);
 
   const CONFIRM_PHRASE = 'EXCLUDE ME';
   const canConfirm = confirmText === CONFIRM_PHRASE && selectedDuration !== null;
@@ -105,6 +109,32 @@ export default function ResponsibleGamingPage() {
             </p>
             <Button variant="danger" onClick={() => setShowExclusionModal(true)}>
               Set Up Self-Exclusion
+            </Button>
+          </CardContent>
+        </Card>
+      </PageSection>
+
+      {/* Local data */}
+      <PageSection>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <RotateCcw className="h-4 w-4" />
+              Reset play data
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-surface-muted mb-3">
+              Clears the rounds recorded on this device and returns your coins to the starting
+              balance. Your statistics start over from nothing.
+            </p>
+            <p className="text-xs text-surface-muted mb-4">
+              {roundsRecorded === 0
+                ? 'No rounds recorded yet.'
+                : `${roundsRecorded} ${roundsRecorded === 1 ? 'round' : 'rounds'} recorded.`}
+            </p>
+            <Button variant="outline" onClick={resetPlayData}>
+              Reset
             </Button>
           </CardContent>
         </Card>

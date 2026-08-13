@@ -24,9 +24,9 @@ import {
   mockMissions,
   mockOutcomeHistory,
   mockTournament,
-  mockWallet,
 } from '@/lib/mock-data';
 import { cn, formatCoins, formatRelativeTime, greetingKey } from '@/lib/utils';
+import { useGameStore } from '@/store/game-store';
 import { useAuthStore } from '@/store/auth-store';
 
 const GREETINGS = {
@@ -37,6 +37,13 @@ const GREETINGS = {
 
 export default function HomePage() {
   const user = useAuthStore((state) => state.user);
+  const balance = useGameStore((state) => state.balance);
+  const roundsPlayed = useGameStore((state) => state.playedRounds.length);
+  const playedHistory = useGameStore((state) => state.history);
+
+  // Falls back to the seeded strip only while the player has no rounds of
+  // their own — an empty rail on first open reads as a broken widget.
+  const recentOutcomes = playedHistory.length > 0 ? playedHistory : mockOutcomeHistory;
   const { toast } = useToast();
 
   const greeting = GREETINGS[greetingKey()];
@@ -60,12 +67,12 @@ export default function HomePage() {
             <p className="mt-1 flex items-baseline gap-2">
               <Coins size={22} aria-hidden="true" className="text-gold-400" />
               <span className="font-sans text-4xl font-bold leading-none text-gold-300">
-                {formatCoins(mockWallet.balance)}
+                {formatCoins(balance)}
               </span>
             </p>
-            {mockWallet.bonus > 0 ? (
+            {roundsPlayed > 0 ? (
               <Badge variant="gold" size="sm" className="mt-2">
-                +{formatCoins(mockWallet.bonus)} bonus
+                {roundsPlayed} {roundsPlayed === 1 ? 'round' : 'rounds'} played
               </Badge>
             ) : null}
           </div>
@@ -182,7 +189,7 @@ export default function HomePage() {
         }
       >
         <Card className="p-4">
-          <RoundHistoryStrip history={mockOutcomeHistory} limit={20} />
+          <RoundHistoryStrip history={recentOutcomes} limit={20} />
         </Card>
       </PageSection>
 
