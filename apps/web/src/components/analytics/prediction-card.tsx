@@ -152,7 +152,13 @@ export function PredictionCard({ estimate, className }: PredictionCardProps) {
         <div>
           <dt className="text-surface-muted">Model accuracy to date</dt>
           <dd className="font-semibold tabular-nums text-surface-subtle">
-            {formatPercent(historicalAccuracy)}
+            {/* "Not scored yet" is the honest reading. A dash here would look
+                like a rendering fault; a number would be an invention. */}
+            {historicalAccuracy === null ? (
+              <span className="font-normal text-surface-muted">Not scored yet</span>
+            ) : (
+              formatPercent(historicalAccuracy)
+            )}
           </dd>
         </div>
         <div>

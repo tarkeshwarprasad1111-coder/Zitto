@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { BANNED_PREDICTION_PHRASES, assertNoBannedPhrases } from './analytics.service';
+import { assertNoBannedPhrases } from './analytics.service';
+import { BANNED_PREDICTION_PHRASES } from './prohibited-phrases';
 
 /**
  * `packages/contracts` is the canonical list, but it is an ESM package and this

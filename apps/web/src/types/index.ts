@@ -316,8 +316,15 @@ export interface PredictionEstimate {
   sampleSize: number;
   window: AnalyticsWindow;
   method: string;
-  /** Model's historical hit rate on settled rounds, 0–1. */
-  historicalAccuracy: number;
+  /**
+   * Model's historical hit rate on settled rounds, 0–1.
+   *
+   * Null when the model has not been scored against enough outcomes to publish
+   * a figure. That is a real state, not a missing value — the alternative is
+   * showing a number the data does not support, which is exactly what the
+   * disclaimer exists to prevent.
+   */
+  historicalAccuracy: number | null;
   /** Rounds the accuracy figure itself is based on. */
   accuracySampleSize: number;
   /** Mandatory independence notice. Rendered verbatim, never paraphrased. */
