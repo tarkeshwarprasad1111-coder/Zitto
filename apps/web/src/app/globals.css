@@ -47,10 +47,23 @@
     overscroll-behavior-y: none;
   }
 
-  /* Never let the page scroll sideways on a 320px device */
-  body,
-  #__next {
+  /*
+   * The page scrolls up and down only.
+   *
+   * `html` matters as much as `body` here: clipping the body alone still
+   * leaves the document element scrollable, so a phone will happily pan the
+   * whole page sideways as soon as anything overflows. That is what happened —
+   * the rule named `#__next`, which the App Router never renders, so in
+   * practice only `body` was clipped.
+   *
+   * `clip` rather than `hidden` on purpose: `hidden` turns these into scroll
+   * containers, which silently kills every `position: sticky` descendant —
+   * the top bar among them.
+   */
+  html,
+  body {
     overflow-x: clip;
+    max-width: 100%;
   }
 
   h1,
