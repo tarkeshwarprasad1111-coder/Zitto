@@ -40,27 +40,46 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      # `shell: bash` matters on every step that pipes to tee: it turns on
+      # pipefail, so the step's exit status is the command's and not tee's.
+      # Without it a failed build reports success and the error only surfaces
+      # three steps later as something unrelated.
       - name: Build static export
         working-directory: apps/web
+        shell: bash
         run: pnpm build:mobile 2>&1 | tee ../../next-build.log
+
+      - name: Verify the export produced something
+        working-directory: apps/web
+        shell: bash
+        run: |
+          if [ ! -f out/index.html ]; then
+            echo "::error::next build finished but out/index.html is missing."
+            exit 1
+          fi
+          echo "Exported $(find out -name '*.html' | wc -l) pages."
 
       - name: Scaffold Android project
         working-directory: apps/web
+        shell: bash
         run: pnpm exec cap add android 2>&1 | tee -a ../../next-build.log
 
       - name: Generate launcher icons and splash
         working-directory: apps/web
-        # Non-fatal: a missing icon is a cosmetic problem, and failing here
-        # would hide whatever the APK build itself has to say.
+        shell: bash
+        # Non-fatal on purpose: a missing launcher icon is cosmetic, and
+        # failing here would stop us finding out whether the APK itself builds.
         run: pnpm exec capacitor-assets generate --android 2>&1 | tee -a ../../next-build.log || true
 
       - name: Sync web assets into the Android project
         working-directory: apps/web
+        shell: bash
         run: pnpm exec cap sync android 2>&1 | tee -a ../../next-build.log
 
       - name: Assemble debug APK
         id: assemble
         working-directory: apps/web/android
+        shell: bash
         run: |
           chmod +x ./gradlew
           ./gradlew assembleDebug --stacktrace 2>&1 | tee -a ../../../gradle.log

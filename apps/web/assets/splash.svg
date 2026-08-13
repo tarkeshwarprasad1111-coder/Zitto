@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" role="img" aria-label="Zitto">
   <!-- Splash is 2732x2732 so Capacitor can crop it to any device aspect ratio
-       without the mark drifting off-centre. Ground matches --surface-bg. -->
+       without the mark drifting off-centre. Ground matches the app background. -->
   <rect width="2732" height="2732" fill="#0A0A0F"/>
 
   <g transform="translate(1110, 1110) scale(1)">

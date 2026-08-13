@@ -36,6 +36,22 @@ const emptySession = {
   'user' | 'accessToken' | 'refreshToken' | 'expiresAt' | 'isAuthenticated'
 >;
 
+/**
+ * Stand-in for `localStorage` during server prerender.
+ *
+ * Returning null from `getItem` means nothing is ever rehydrated on the
+ * server, which is correct: a build-time render has no user session, and
+ * pretending otherwise would bake one person's state into the HTML.
+ */
+const serverStorage: Storage = {
+  length: 0,
+  clear: () => undefined,
+  getItem: () => null,
+  key: () => null,
+  removeItem: () => undefined,
+  setItem: () => undefined,
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -74,7 +90,14 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'zitto.auth',
-      storage: createJSONStorage(() => localStorage),
+      // Next prerenders these pages at build time, where `localStorage` does
+      // not exist. Reaching for it there throws inside the middleware and
+      // leaves `useAuthStore.persist` undefined, so the hydration check below
+      // crashes the build. A no-op store keeps the middleware intact on the
+      // server; the browser gets the real thing and behaves exactly as before.
+      storage: createJSONStorage(() =>
+        typeof window === 'undefined' ? serverStorage : localStorage,
+      ),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
@@ -89,9 +112,11 @@ export const useAuthStore = create<AuthState>()(
   ),
 );
 
-// Storage may already have been read before this module finished evaluating
-// (or be unavailable, e.g. SSR) — settle `isHydrated` either way.
-if (useAuthStore.persist.hasHydrated()) {
+// Storage may already have been read before this module finished evaluating —
+// settle `isHydrated` in that case. Skipped on the server, where there is
+// nothing to rehydrate and `isHydrated` must stay false so the layout renders
+// its loading state rather than a flash of signed-out UI.
+if (typeof window !== 'undefined' && useAuthStore.persist?.hasHydrated()) {
   useAuthStore.getState().setHydrated(true);
 }
 

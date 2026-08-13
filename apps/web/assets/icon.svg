@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Zitto">
-  <!-- Ground matches --surface-bg so the icon sits flush on the splash screen. -->
+  <!-- Ground matches the app background so the icon sits flush on the splash screen. -->
   <rect width="512" height="512" rx="112" fill="#0A0A0F"/>
 
   <!-- The two sides of a round, split on the diagonal: dragon red, tiger blue. -->
