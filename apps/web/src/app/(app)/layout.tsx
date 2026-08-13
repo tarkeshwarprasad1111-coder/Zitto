@@ -12,6 +12,9 @@ import { mockUnreadNotificationCount } from '@/lib/mock-data';
 import { useAuthStore } from '@/store/auth-store';
 import { useGameStore } from '@/store/game-store';
 
+/** True in the packaged Android build, which ships without a backend. */
+const IS_OFFLINE_BUILD = process.env.NEXT_PUBLIC_OFFLINE === '1';
+
 /** Routes inside the app shell that a guest may still open. */
 const GUEST_ALLOWED = ['/game/practice-01'];
 
@@ -21,6 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isHydrated = useAuthStore((state) => state.isHydrated);
+  const signInLocally = useAuthStore((state) => state.signInLocally);
   const balance = useGameStore((state) => state.balance);
 
   const isGuestAllowed = GUEST_ALLOWED.some((route) => pathname.startsWith(route));
@@ -29,10 +33,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // Wait for the persisted session to load before deciding — redirecting
     // on the first render would bounce every returning player to /login.
     if (!isHydrated) return;
-    if (!isAuthenticated && !isGuestAllowed) {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    if (isAuthenticated || isGuestAllowed) return;
+
+    // The packaged build has no server to authenticate against, so sending a
+    // first-time player to /login strands them: no account can be created and
+    // no code can arrive. Let them in and start playing.
+    if (IS_OFFLINE_BUILD) {
+      signInLocally();
+      return;
     }
-  }, [isHydrated, isAuthenticated, isGuestAllowed, pathname, router]);
+
+    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+  }, [isHydrated, isAuthenticated, isGuestAllowed, pathname, router, signInLocally]);
 
   if (!isHydrated) {
     return (
@@ -45,7 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated && !isGuestAllowed) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <Spinner size="lg" className="text-gold-400" label="Redirecting to login" />
+        <Spinner size="lg" className="text-gold-400" label="Signing you in" />
       </div>
     );
   }

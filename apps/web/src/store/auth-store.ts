@@ -17,6 +17,14 @@ interface AuthState {
   isHydrated: boolean;
 
   login: (user: User, tokens: AuthTokens) => void;
+  /**
+   * Signs a player in without a server.
+   *
+   * Only for the packaged offline build, where there is nothing to
+   * authenticate against and a login wall just blocks the front door. Carries
+   * no real token, so any request that reaches a live API still fails closed.
+   */
+  signInLocally: () => void;
   logout: () => void;
   setUser: (user: User) => void;
   setTokens: (tokens: AuthTokens) => void;
@@ -64,6 +72,23 @@ export const useAuthStore = create<AuthState>()(
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           expiresAt: Date.now() + tokens.expiresIn * 1000,
+          isAuthenticated: true,
+        }),
+
+      signInLocally: () =>
+        set({
+          user: {
+            id: 'local-player',
+            displayName: 'Player',
+            email: null,
+            mobile: null,
+            avatarUrl: null,
+            locale: 'en',
+            createdAt: new Date().toISOString(),
+          } as User,
+          accessToken: null,
+          refreshToken: null,
+          expiresAt: null,
           isAuthenticated: true,
         }),
 

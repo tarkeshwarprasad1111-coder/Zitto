@@ -15,6 +15,7 @@ import { ZittoLogo } from '@/components/layout/top-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OfflineEntryRedirect } from '@/components/offline-entry-redirect';
 import { INDEPENDENCE_DISCLAIMER, type PlayingCardData } from '@/types';
 
 export const metadata: Metadata = {
@@ -74,6 +75,7 @@ const PAYOUTS = [
 export default function LandingPage() {
   return (
     <div className="min-h-dvh">
+      <OfflineEntryRedirect />
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-surface-border/60 bg-surface-bg/80 pt-safe backdrop-blur-lg">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">

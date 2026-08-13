@@ -21,3 +21,4 @@ coverage
 .idea
 prisma/*.db
 prisma/*.db-journal
+.preview/

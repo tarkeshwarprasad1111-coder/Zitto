@@ -59,6 +59,34 @@ jobs:
           fi
           echo "Exported $(find out -name '*.html' | wc -l) pages."
 
+      # A build that ships raw `@tailwind` directives produces an APK of
+      # unstyled HTML while every step reports success. That shipped once;
+      # this makes it impossible to ship again.
+      - name: Verify Tailwind compiled
+        working-directory: apps/web
+        shell: bash
+        run: |
+          CSS=$(find out/_next/static/css -name '*.css' 2>/dev/null | head -1)
+
+          if [ -z "$CSS" ]; then
+            echo "::error::No stylesheet was emitted."
+            exit 1
+          fi
+
+          if grep -q '@tailwind\|@apply' "$CSS"; then
+            echo "::error::$CSS still contains @tailwind/@apply — the Tailwind PostCSS plugin did not run."
+            head -c 400 "$CSS"
+            exit 1
+          fi
+
+          SIZE=$(wc -c < "$CSS")
+          if [ "$SIZE" -lt 15000 ]; then
+            echo "::error::Stylesheet is only ${SIZE} bytes. Tailwind emitted almost nothing — check the content globs in tailwind.config.ts."
+            exit 1
+          fi
+
+          echo "Stylesheet compiled: ${SIZE} bytes."
+
       - name: Scaffold Android project
         working-directory: apps/web
         shell: bash

@@ -17,6 +17,13 @@ const isMobileBuild = process.env.MOBILE === '1';
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+
+  env: {
+    // Read at runtime to decide whether the app may sign a player in locally.
+    // The packaged build has no server to authenticate against, so a login
+    // wall there is a dead end rather than a security boundary.
+    NEXT_PUBLIC_OFFLINE: isMobileBuild ? '1' : '',
+  },
   eslint: {
     dirs: ['src'],
   },
